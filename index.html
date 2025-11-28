@@ -2,6 +2,95 @@
 <html lang="en">
 <head>
     <meta http-equiv="Upgrade-Insecure-Requests" content="1">
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Upgrade-Insecure-Requests" content="1">
+    <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains; preload">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prime & Divisor Finder</title>
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/style.css?v=60">
+    <style>
+        .tool { background:#111; padding:2rem; border-radius:16px; border:3px solid #00f5ff; box-shadow:0 0 30px #00f5ff40; max-width:600px; margin:3rem auto; }
+        input,button { padding:1rem; font-size:1.2rem; margin:1rem 0; width:100%; border-radius:8px; background:#000; color:#fff; border:2px solid #333; }
+        button { background:#00f5ff; color:#000; border:none; cursor:pointer; font-weight:bold; }
+        button:hover { background:#80f8ff; }
+        pre { background:#000; padding:1.5rem; border-radius:12px; margin-top:1rem; white-space:pre-wrap; border:1px solid #333; color:#fff; font-family:monospace; }
+    </style>
+</head>
+<body>
+    <header><nav><a href="index.html" style="color:#00f5ff;">← Home</a></nav></header>
+    <main>
+        <section class="hero">
+            <h1>Prime & Divisor Finder</h1>
+            <p>Enter a number ≥ 2</p>
+            <img src="images/photo.jpg" alt="Jesse" class="profile-photo">
+        </section>
+
+        <div class="tool">
+            <input type="number" id="numInput" placeholder="Try 42 or 97" min="2">
+            <button onclick="runPrime()">Find Out :D</button>
+            <pre id="output"></pre>
+        </div>
+    </main>
+    <footer>
+        <p>© 2025 Jesse · -What a headache this crap is-</p>
+    </footer>
+
+    <script>
+        function runPrime() {
+            let c = parseInt(document.getElementById("numInput").value);
+            if (isNaN(c) || c < 2) {
+                document.getElementById("output").textContent = "Please enter a number ≥ 2.";
+                return;
+            }
+
+            let output = "You entered " + c + ".\n\n";
+            let z = 0;
+            let f = true;
+
+            for (let d = 2; d < c; ++d) {
+                if (c % d === 0) {
+                    ++z;
+                    let y = c / d;
+                    if (d <= y) output += d + ", " + y + "\n";
+                    f = false;
+                }
+            }
+
+            if (!f) {
+                output += "\nThese " + z + " numbers will devide into your number evenly.\n";
+            }
+
+            if (f) {
+                output += c + " is a prime number.\n";
+                output += "These are the prime numbers that come before it:\n";
+
+                let n = 0;
+                for (let l = c - 1; l >= 2; --l) {        // ← start at c-1, stop at 2
+                    let m = true;
+                    for (let j = 2; j < l; ++j) {
+                        if (l % j === 0) {
+                            m = false;
+                            break;
+                        }
+                    }
+                    if (m) {
+                        output += l + "\n";
+                        ++n;
+                    }
+                }
+                output += "\nThere are " + n + " prime numbers before " + c + ".\n";
+            }
+
+            document.getElementById("output").textContent = output;
+        }
+    </script>
+</body>
+</html>
+
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hey it’s me :D</title>
@@ -29,5 +118,6 @@
     </footer>
 </body>
 </html>
+
 
 
