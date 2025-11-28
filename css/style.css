@@ -1,4 +1,4 @@
-/* css/style.css – perfect fit on every screen */
+/* css/style.css – final no-cut-off version */
 * { margin:0; padding:0; box-sizing:border-box; }
 
 html, body {
@@ -15,7 +15,7 @@ body {
 }
 
 header {
-  padding: 1.5rem;
+  padding: 2rem 1rem 1rem;
   text-align: center;
 }
 
@@ -23,43 +23,46 @@ main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;   /* ← this centers vertically */
-  align-items: center;       /* ← this centers horizontally */
-  padding: 2rem;
+  justify-content: center;
+  align-items: center;
   text-align: center;
+  padding: 2rem 1.5rem;
 }
 
 .hero h1 {
-  font-size: clamp(2.8rem, 10vw, 6rem);
-  font-weight: 800;
+  font-size: clamp(3rem, 11vw, 7rem);
+  font-weight: 900;
   background: linear-gradient(90deg, #00eeff, #a0f7ff);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 1rem;
+  margin-bottom: 2.5rem;           /* ← BIGGER GAP = NO CUT-OFF */
+  line-height: 1.1;
   animation: glow 4s ease-in-out infinite alternate;
 }
 
 .hero p {
-  font-size: clamp(1.3rem, 5vw, 2rem);
-  opacity: 0.9;
-  max-width: 90%;
+  font-size: clamp(1.4rem, 5vw, 2.2rem);
+  opacity: 0.92;
+  max-width: 85%;
+  margin: 0 auto;
+  line-height: 1.4;
 }
 
 footer {
-  padding: 2rem 1rem 3rem;
+  padding: 3rem 1rem 2.5rem;
   text-align: center;
   font-size: 0.9rem;
   opacity: 0.7;
 }
 
-/* subtle glow animation */
 @keyframes glow {
   from { filter: drop-shadow(0 0 20px #00eeff40); }
-  to   { filter: drop-shadow(0 0 40px #00eeff80); }
+  to   { filter: drop-shadow(0 0 45px #00eeff90); }
 }
 
-/* extra safety on tiny phones */
-@media (max-height: 500px) {
-  main { padding: 1rem; }
+/* Extra safety on very small screens */
+@media (max-height: 600px) {
+  .hero h1 { margin-bottom: 2rem; }
+  main { padding: 1.5rem; }
 }
