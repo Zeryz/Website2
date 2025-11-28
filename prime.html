@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
     <meta http-equiv="Upgrade-Insecure-Requests" content="1">
-    <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains;>
+    <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime & Divisor Finder</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=60">
+    <link rel="stylesheet" href="css/style.css?v=80">
     <style>
         .tool { background:#111; padding:2rem; border-radius:16px; border:3px solid #00f5ff; box-shadow:0 0 30px #00f5ff40; max-width:600px; margin:3rem auto; }
         input,button { padding:1rem; font-size:1.2rem; margin:1rem 0; width:100%; border-radius:8px; background:#000; color:#fff; border:2px solid #333; }
@@ -24,17 +24,15 @@
             <p>Enter a number ≥ 2</p>
             <img src="images/photo.jpg" alt="Jesse" class="profile-photo">
         </section>
-
         <div class="tool">
             <input type="number" id="numInput" placeholder="Try 42 or 97" min="2">
-            <button onclick="runPrime()">Find Out :D</button>
+            <button onclick="runPrime()">Find out :D</button>
             <pre id="output"></pre>
         </div>
     </main>
     <footer>
         <p>© 2025 Jesse · -What a headache this crap is-</p>
     </footer>
-
     <script>
         function runPrime() {
             let c = parseInt(document.getElementById("numInput").value);
@@ -42,11 +40,9 @@
                 document.getElementById("output").textContent = "Please enter a number ≥ 2.";
                 return;
             }
-
             let output = "You entered " + c + ".\n\n";
             let z = 0;
             let f = true;
-
             for (let d = 2; d < c; ++d) {
                 if (c % d === 0) {
                     ++z;
@@ -55,17 +51,14 @@
                     f = false;
                 }
             }
-
             if (!f) {
                 output += "\nThese " + z + " numbers will devide into your number evenly.\n";
             }
-
             if (f) {
                 output += c + " is a prime number.\n";
                 output += "These are the prime numbers that come before it:\n";
-
                 let n = 0;
-                for (let l = c - 1; l >= 2; --l) {        // ← start at c-1, stop at 2
+                for (let l = c - 1; l >= 2; --l) {
                     let m = true;
                     for (let j = 2; j < l; ++j) {
                         if (l % j === 0) {
@@ -80,7 +73,6 @@
                 }
                 output += "\nThere are " + n + " prime numbers before " + c + ".\n";
             }
-
             document.getElementById("output").textContent = output;
         }
     </script>
