@@ -4,10 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime & Divisor Finder</title>
-    <meta name="description" content="Jesse’s prime number tool">
+    <meta name="description" content="Jesse's prime number tool">
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=30">
-    <script src="https://cdn.jsdelivr.net/npm/@wasm-toolkit/wasm-run@0.2.5/dist/browser.js"></script>
+    <link rel="stylesheet" href="css/style.css?v=50">
     <style>
         .tool {
             background: #111;
@@ -24,6 +23,9 @@
             margin: 1rem 0;
             width: 100%;
             border-radius: 8px;
+            background: #000;
+            color: #fff;
+            border: 2px solid #333;
         }
         button {
             background: #00f5ff;
@@ -40,21 +42,26 @@
             margin-top: 1rem;
             white-space: pre-wrap;
             border: 1px solid #333;
+            color: #fff;
+            font-family: monospace;
+            font-size: 1rem;
         }
     </style>
 </head>
 <body>
-    <header><nav><a href="index.html">← Home</a></nav></header>
+    <header>
+        <nav><a href="index.html" style="color:#00f5ff; text-decoration:none;">← Home</a></nav>
+    </header>
     <main>
         <section class="hero">
-            <h1>Prime Checker</h1>
-            <p>Enter a number and I’ll tell you everything</p>
+            <h1>Prime & Divisor Finder</h1>
+            <p>Enter a number and run Jesse's exact code</p>
             <img src="images/photo.jpg" alt="Jesse" class="profile-photo">
         </section>
 
         <div class="tool">
             <input type="number" id="numInput" placeholder="Enter a number (e.g. 42)" min="2">
-            <button onclick="runPrime()">Run Jesse’s Code</button>
+            <button onclick="runPrime()">Run Jesse's Code</button>
             <pre id="output"></pre>
         </div>
     </main>
@@ -63,64 +70,60 @@
     </footer>
 
     <script>
-        const cppCode = `
-#include <iostream>
-using namespace std;
-int c;
-bool f=true;
-bool e;
-bool m=true;
-int n;
-int d;
-int g;
-int j;
-int k;
-int l;
-int z;
-int y;
-int x;
-int w;
-int main() {
-    cin>>c;
-    cout<<"You entered "<<c<<"."<<endl;
-    for(d=2; (d<c); ++d) {
-       if(c % d == 0){
-       ++z;
-       y=(c / d);
-     if(d<=y) { cout<<d<<", "<<y<<endl;}
-   if(z>0) { f = false;}
-       }
-    }
-if(f==false){
-cout<<"These "<<z<<" numbers will devide into your number evenly."<<endl;
-}
-if(f){
-       cout<<c<<" is a prime number."<<endl;
-       cout<<"These are the prime numbers that come before it:"<<endl;
- for(l=--c; (l>0); --l, (m = true)){
-for(j=2; (j<l); ++j) {
- if(l % j == 0) {
-     ++k;
-  if(k > 0){m = false;}
-  }
-  }
-  }
- if (m){
-cout<<l<<endl;
-n++;
- }
-   }
-   cout<<"There are "<<n<<" prime numbers before "<<++c<<"."<<endl;
-}
-}
-        `;
+        function runPrime() {
+            let c = parseInt(document.getElementById("numInput").value);
+            if (isNaN(c) || c < 2) {
+                document.getElementById("output").textContent = "Enter a number >= 2.";
+                return;
+            }
 
-        async function runPrime() {
-            const input = document.getElementById("numInput").value || "2";
-            const { instance } = await WebAssembly.instantiateStreaming(
-                await wasmRun.compile(cppCode, { input: [input] })
-            );
-            const output = instance.exports._start.capturedOutput || "No output";
+            let output = "You entered " + c + ".\n\n";
+
+            let z = 0;
+            let f = true;
+            let y = 0;
+
+            // Your exact factor loop
+            for (let d = 2; d < c; ++d) {
+                if (c % d == 0) {
+                    ++z;
+                    y = (c / d);
+                    if (d <= y) {
+                        output += d + ", " + y + "\n";
+                    }
+                    if (z > 0) f = false;
+                }
+            }
+
+            // Your exact prime check and output
+            if (f == false) {
+                output += "\nThese " + z + " numbers will devide into your number evenly.\n";
+            }
+            if (f) {
+                output += c + " is a prime number.\n";
+                output += "These are the prime numbers that come before it:\n";
+
+                let m = true;
+                let n = 0;
+                let k = 0;
+                let l = c - 1;
+
+                for (l = c - 1; l > 0; --l, m = true) {
+                    k = 0;
+                    for (let j = 2; j < l; ++j) {
+                        if (l % j == 0) {
+                            ++k;
+                            if (k > 0) m = false;
+                        }
+                    }
+                    if (m) {
+                        output += l + "\n";
+                        ++n;
+                    }
+                }
+                output += "\nThere are " + n + " prime numbers before " + c + ".\n";
+            }
+
             document.getElementById("output").textContent = output;
         }
     </script>
