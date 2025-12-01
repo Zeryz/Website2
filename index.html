@@ -1,37 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta http-equiv="Upgrade-Insecure-Requests" content="1">
-    <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hey it's me :D</title>
+    <title>Jesse</title>
     <meta name="description" content="Jesse's corner of the internet">
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=80">
+    <link rel="stylesheet" href="css/style.css?v=150">
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            color: #fff;
+            font-family: system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+        }
+        .sidebar {
+            background: #111;
+            padding: 3rem 2rem;
+            border-right: 3px solid #00f5ff;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .photo {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: 5px solid #00f5ff;
+            box-shadow: 0 0 40px #00f5ff60;
+            margin-bottom: 2rem;
+        }
+        .name {
+            font-size: 2.8rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #00f5ff, #80f8ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 1rem 0;
+        }
+        .tagline { font-size: 1.3rem; opacity: 0.9; margin-bottom: 3rem; }
+        .links a {
+            display: block;
+            color: #00f5ff;
+            text-decoration: none;
+            font-size: 1.4rem;
+            margin: 1rem 0;
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+        .links a:hover {
+            background: #00f5ff20;
+            transform: translateX(10px);
+        }
+        .main-content {
+            padding: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .main-text h1 {
+            font-size: clamp(3rem, 10vw, 7rem);
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, #00f5ff, #80f8ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .main-text p {
+            font-size: 1.8rem;
+            opacity: 0.9;
+        }
+        footer {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            background: #000;
+        }
+        @media (max-width: 900px) {
+            body { grid-template-columns: 1fr; }
+            .sidebar { height: auto; position: relative; border-right: none; border-bottom: 3px solid #00f5ff; }
+        }
+    </style>
 </head>
 <body>
-    <header><nav></nav></header>
-    <main>
-        <section class="hero">
-            <h1>Hello, it's me!</h1>
-            <p>I have a website :D</p>
-            <img src="images/photo.jpg" alt="Jesse" class="profile-photo">
-            <p style="margin-top: 3rem;">
-                <a href="prime.html" style="color:#00f5ff; font-size:1.6rem; text-decoration:underline;">
-                → Prime Number & Divisor Finder ←
-                </a>
-                <p style="margin-top: 1.5rem;">
-    <a href="game.html" style="color:#ff00ff; font-size:1.6rem; text-decoration:underline;">
-    → My C++ Game ←
-    </a>
-</p>
-            </p>
-        </section>
-    </main>
+
+    <aside class="sidebar">
+        <img src="images/photo.jpg" alt="Jesse" class="photo">
+        <div class="name">Jesse</div>
+        <div class="tagline">developer · gamer · chaos creator</div>
+        <div class="links">
+            <a href="prime.html">Prime & Divisor Finder</a>
+            <a href="game.html">Little Game</a>
+            <a href="https://github.com/yourusername" target="_blank">GitHub</a>
+            <a href="mailto:you@example.com">Email</a>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="main-text">
+            <h1>Hello, it’s me!</h1>
+            <p>I make things that work… eventually.</p>
+        </div>
+    </div>
+
     <footer>
         <p>© 2025 Jesse · -What a headache this crap is-</p>
     </footer>
+
 </body>
 </html>
-
