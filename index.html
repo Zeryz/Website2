@@ -6,7 +6,7 @@
     <title>Jesse</title>
     <meta name="description" content="Jesse's corner of the internet">
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=160">
+    <link rel="stylesheet" href="css/style.css?v=170">
     <style>
         body {
             margin: 0;
@@ -46,8 +46,7 @@
         }
         .tagline { font-size: 1.3rem; opacity: 0.9; margin-bottom: 3rem; }
         .links a {
-            display:link {
-            display: block;
+            display: block; /* ← fixed the typo */
             color: #00f5ff;
             text-decoration: none;
             font-size: 1.4rem;
@@ -69,7 +68,7 @@
         }
         .main-text h1 {
             font-size: clamp(3rem, 10vw, 7rem);
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             background: linear-gradient(90deg, #00f5ff, #80f8ff);
             -webkit-background-clip: text;
             background-clip: text;
@@ -78,6 +77,9 @@
         .main-text p {
             font-size: 1.8rem;
             opacity: 0.9;
+            max-width: 800px;
+            margin: 1rem auto;
+            line-height: 1.6;
         }
         footer {
             grid-column: 1 / -1;
@@ -88,11 +90,8 @@
             background: #000;
         }
 
-        /* Mobile — stack everything vertically */
         @media (max-width: 900px) {
-            body {
-                grid-template-columns: 1fr;
-            }
+            body { grid-template-columns: 1fr; }
             .sidebar {
                 height: auto;
                 position: relative;
@@ -109,6 +108,7 @@
             .photo { width: 120px; height: 120px; }
             .name { font-size: 2.2rem; }
             .tagline { font-size: 1.1rem; }
+            .main-text p { font-size: 1.5rem; }
         }
     </style>
 </head>
@@ -141,4 +141,3 @@
 
 </body>
 </html>
-
