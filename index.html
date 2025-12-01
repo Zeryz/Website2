@@ -6,7 +6,7 @@
     <title>Jesse</title>
     <meta name="description" content="Jesse's corner of the internet">
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=150">
+    <link rel="stylesheet" href="css/style.css?v=160">
     <style>
         body {
             margin: 0;
@@ -15,7 +15,8 @@
             font-family: system-ui, -apple-system, sans-serif;
             min-height: 100vh;
             display: grid;
-            grid-template-columns: 300px 1fr;
+            grid-template-columns: minmax(280px, 1fr) 3fr;
+            grid-template-rows: auto 1fr auto;
         }
         .sidebar {
             background: #111;
@@ -27,15 +28,15 @@
             overflow-y: auto;
         }
         .photo {
-            width: 180px;
-            height: 180px;
+            width: 160px;
+            height: 160px;
             border-radius: 50%;
             border: 5px solid #00f5ff;
             box-shadow: 0 0 40px #00f5ff60;
             margin-bottom: 2rem;
         }
         .name {
-            font-size: 2.8rem;
+            font-size: 2.6rem;
             font-weight: 900;
             background: linear-gradient(90deg, #00f5ff, #80f8ff);
             -webkit-background-clip: text;
@@ -45,6 +46,7 @@
         }
         .tagline { font-size: 1.3rem; opacity: 0.9; margin-bottom: 3rem; }
         .links a {
+            display:link {
             display: block;
             color: #00f5ff;
             text-decoration: none;
@@ -59,7 +61,7 @@
             transform: translateX(10px);
         }
         .main-content {
-            padding: 4rem;
+            padding: 4rem 3rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -85,9 +87,28 @@
             opacity: 0.7;
             background: #000;
         }
+
+        /* Mobile — stack everything vertically */
         @media (max-width: 900px) {
-            body { grid-template-columns: 1fr; }
-            .sidebar { height: auto; position: relative; border-right: none; border-bottom: 3px solid #00f5ff; }
+            body {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 3px solid #00f5ff;
+                padding: 2rem 1.5rem;
+                text-align: center;
+            }
+            .photo { width: 140px; height: 140px; }
+            .main-content { padding: 3rem 2rem; }
+        }
+
+        @media (max-width: 500px) {
+            .photo { width: 120px; height: 120px; }
+            .name { font-size: 2.2rem; }
+            .tagline { font-size: 1.1rem; }
         }
     </style>
 </head>
@@ -118,4 +139,3 @@
 
 </body>
 </html>
-
