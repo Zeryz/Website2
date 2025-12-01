@@ -5,23 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Little Game</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=200">
+    <link rel="stylesheet" href="css/style.css?v=210">
     <style>
-        .game-container {
-            background:#111; padding:2rem; border-radius:20px; border:4px solid #00f5ff;
-            box-shadow:0 0 50px #00f5ff60; max-width:800px; margin:3rem auto;
-            font-family:'Courier New',monospace; color:#0f0;
-        }
-        #output {
-            background:#000; padding:1.5rem; border-radius:12px; height:60vh;
-            overflow-y:auto; white-space:pre-wrap; border:2px solid #0f0;
-            margin-bottom:1rem; font-size:1.1rem;
-        }
-        button {
-            padding:1rem; font-size:1.3rem; width:100%; border-radius:12px;
-            background:#00f5ff; color:#000; border:none; font-weight:bold;
-            cursor:pointer;
-        }
+        .game-container { background:#111; padding:2rem; border-radius:20px; border:4px solid #00f5ff; box-shadow:0 0 50px #00f5ff60; max-width:800px; margin:3rem auto; font-family:'Courier New',monospace; color:#0f0; }
+        #output { background:#000; padding:1.5rem; border-radius:12px; height:60vh; overflow-y:auto; white-space:pre-wrap; border:2px solid #0f0; margin-bottom:1rem; font-size:1.1rem; }
+        button { padding:1rem; font-size:1.3rem; width:100%; border-radius:12px; background:#00f5ff; color:#000; border:none; font-weight:bold; cursor:pointer; margin-top:1rem; }
         button:hover { background:#80f8ff; }
     </style>
 </head>
@@ -30,13 +18,13 @@
     <main>
         <section class="hero">
             <h1>Little Game</h1>
-            <p>Fun Stuff</p>
+            <p>Your newest masterpiece</p>
             <img src="images/photo.jpg" alt="Jesse" class="profile-photo">
         </section>
 
         <div class="game-container">
-        <div id="output">Starting Little Game...\n\n</div>
-    <button type="button" onclick="fightAgain()">Fight Again</button>
+            <div id="output">Starting Little Game...\n\n</div>
+            <button type="button" onclick="fightAgain()">Fight Again</button>
         </div>
     </main>
     <footer>
@@ -45,24 +33,15 @@
 
     <script>
         class Stats {
-            constructor() {
-                this.level = 1;
-                this.xp = 10;
-            }
-            getStr()   { return 10 + (this.level - 1); }
-            getAtk()   { return 10 + (this.level - 1); }
-            getDef()   { return 10 + (this.level - 1); }
-            getHp()    { return 10 + (this.level - 1); }
+            constructor() { this.level = 1; this.xp = 10; }
+            getStr() { return 10 + (this.level - 1); }
+            getAtk() { return 10 + (this.level - 1); }
+            getDef() { return 10 + (this.level - 1); }
+            getHp()  { return 10 + (this.level - 1); }
         }
 
         class BadGuy {
-            constructor() {
-                this.level = 1;
-                this.hp = 9;
-                this.atk = 5;
-                this.def = 9;
-                this.str = 5;
-            }
+            constructor() { this.level = 1; this.hp = 9; this.atk = 5; this.def = 9; this.str = 5; }
             getBadGuyHp()  { return 8 + this.level; }
             getBadGuyAtk() { return 1 + (this.level - 1); }
             getBadGuyDef() { return 8 + this.level; }
@@ -74,17 +53,23 @@
         let player = new Stats();
         let enemy = new BadGuy();
 
-        function println(text = "") {
-            output.textContent += text + "\n";
+        function print(text) {
+            output.textContent += text;
             output.scrollTop = output.scrollHeight;
         }
+        function println(text = "") { print(text + "\n"); }
 
-        function fight() {
+        async function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function fight() {
             enemy.level = player.level;
             enemy.hp = enemy.getBadGuyHp();
             let playerHp = player.getHp();
 
             println("A new enemy appears!");
+            await delay(550);
 
             while (enemy.hp > 0 && playerHp > 0) {
                 // Player turn
@@ -105,47 +90,52 @@
                 } else {
                     println("You miss the enemy!");
                 }
+                await delay(550);
 
-                // Enemy turn (if alive)
-                if (enemy.hp > 0) {
-                    let enemyAccuracy = enemy.getBadGuyAtk() / (enemy.getBadGuyAtk() + player.getDef());
-                    let enemyCritChance = Math.min(0.5, enemy.getBadGuyAtk() * 0.01);
-                    let enemyHit = Math.random() < enemyAccuracy;
+                if (enemy.hp <= 0) break;
 
-                    if (enemyHit) {
-                        let baseDamage = enemy.getBadGuyStr() + (Math.floor(Math.random() * 3) - 1);
-                        let isCrit = Math.random() < enemyCritChance;
-                        let damage = Math.max(1, baseDamage - player.getDef());
-                        if (isCrit) {
-                            damage = Math.floor(damage * 2.5);
-                            print("Enemy lands a critical hit! ");
-                        }
-                        playerHp -= damage;
-                        println(`Enemy deals ${damage} damage to you!`);
-                    } else {
-                        println("Enemy misses you!");
+                // Enemy turn
+                let enemyAccuracy = enemy.getBadGuyAtk() / (enemy.getBadGuyAtk() + player.getDef());
+                let enemyCritChance = Math.min(0.5, enemy.getBadGuyAtk() * 0.01);
+                let enemyHit = Math.random() < enemyAccuracy;
+
+                if (enemyHit) {
+                    let baseDamage = enemy.getBadGuyStr() + (Math.floor(Math.random() * 3) - 1);
+                    let isCrit = Math.random() < enemyCritChance;
+                    let damage = Math.max(1, baseDamage - player.getDef());
+                    if (isCrit) {
+                        damage = Math.floor(damage * 2.5);
+                        print("Enemy lands a critical hit! ");
                     }
+                    playerHp -= damage;
+                    println(`Enemy deals ${damage} damage to you!`);
+                } else {
+                    println("Enemy misses you!");
                 }
+                await delay(550);
 
                 println(`Enemy HP: ${enemy.hp} | Your HP: ${playerHp}`);
-                if (enemy.hp <= 0) {
-                    println("You win!");
-                    println(`You gained ${Math.round(enemy.getBadGuyXpv())} xp`);
-                    player.xp += enemy.getBadGuyXpv();
-                    println(`You now have ${Math.round(player.xp)} xp`);
-                    if (player.xp >= player.level * 100) {
-                        player.level++;
-                        playerHp = player.getHp();
-                        println(`You leveled up! You are now level ${player.level}`);
-                    } else {
-                        playerHp = player.getHp();
-                    }
-                }
-                if (playerHp <= 0) {
-                    println("You lose!");
+                await delay(550);
+            }
+
+            if (enemy.hp <= 0) {
+                println("You win!");
+                let xpGain = enemy.getBadGuyXpv();
+                println(`You gained ${Math.round(xpGain)} xp`);
+                player.xp += xpGain;
+                println(`You now have ${Math.round(player.xp)} xp`);
+                if (player.xp >= player.level * 100) {
+                    player.level++;
+                    playerHp = player.getHp();
+                    println(`You leveled up! You are now level ${player.level}`);
+                } else {
                     playerHp = player.getHp();
                 }
+            } else {
+                println("You lose!");
+                playerHp = player.getHp();
             }
+
             println("\nStr: " + player.getStr() + " | Enemy Str: " + enemy.getBadGuyStr());
             println("Atk: " + player.getAtk() + " | Enemy Atk: " + enemy.getBadGuyAtk());
             println("Def: " + player.getDef() + " | Enemy Def: " + enemy.getBadGuyDef());
@@ -155,12 +145,12 @@
         }
 
         function fightAgain() {
-            output.textContent = ""; // clear screen
+            output.textContent = "";
             println("Starting Little Game...\n");
             fight();
         }
 
-        // Auto-start on load
+        // Auto-start
         fightAgain();
     </script>
 </body>
