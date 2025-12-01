@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RPG Battle Arena</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=100">
+    <link rel="stylesheet" href="css/style.css?v=101">
     <style>
         .game-container {
             background: #111;
@@ -55,7 +55,7 @@
 
     <main>
         <section class="hero">
-            <h1>RPG Battle Arena</h1>
+            <h1>Little Game</h1>
             <p>Testing</p>
             <img src="images/photo.jpg" alt="Jesse" class="profile-photo">
         </section>
@@ -71,6 +71,7 @@
         <p>© 2025 Jesse · -What a headache this crap is-</p>
     </footer>
 
+    <!-- Fixed WebAssembly loader -->
     <script src="https://cdn.jsdelivr.net/gh/jessejputnam/wasm-rpg@main/wasm-rpg.js"></script>
     <script>
         let inputBuffer = [];
@@ -99,26 +100,22 @@
             if (e.key === "Enter") sendInput();
         });
 
-        // Auto-start the game
+        // Start the game
         println("Starting Jesse's RPG Battle Arena...\n");
-        set up in browser");
-        setTimeout(() => {
-            Module = {
-                print: text => println(text),
-                printErr: text => println("ERROR: " + text),
-                preRun: [],
-                postRun: [],
-                onRuntimeInitialized: () => {
-                    println("Engine ready! Starting game...\n");
-                    // Feed empty input to start
-                    FS.writeFile('/input.txt', '');
-                    Module.callMain();
-                },
-                arguments: [],
-                locateFile: (path) => "https://cdn.jsdelivr.net/gh/jessejputnam/wasm-rpg@main/" + path,
-                inputStream: () => inputBuffer.shift() || null
-            };
-        }, 1000);
+        println("Engine loading — please wait...\n");
+
+        const Module = {
+            print: text => println(text),
+            printErr: text => println("ERROR: " + text),
+            preRun: [],
+            postRun: [],
+            onRuntimeInitialized: () => {
+                println("\nEngine ready! Starting game...\n");
+                Module.callMain();
+            },
+            locateFile: (path) => "https://cdn.jsdelivr.net/gh/jessejputnam/wasm-rpg@main/" + path,
+            inputStream: () => inputBuffer.shift() || null
+        };
     </script>
 </body>
 </html>
