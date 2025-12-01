@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPG Battle Arena</title>
+    <title>Little Game</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=101">
+    <link rel="stylesheet" href="css/style.css?v=110">
     <style>
         .game-container {
             background: #111;
@@ -56,14 +56,14 @@
     <main>
         <section class="hero">
             <h1>Little Game</h1>
-            <p>Testing</p>
+            <p>A small adventure by Jesse</p>
             <img src="images/photo.jpg" alt="Jesse" class="profile-photo">
         </section>
 
         <div class="game-container">
-            <div id="output">Loading your epic RPG engine...</div>
-            <input type="text" id="input" placeholder="Type your answer here" autocomplete="off">
-            <button onclick="sendInput()">Send →</button>
+            <div id="output">Loading Little Game...</div>
+            <input type="text" id="input" placeholder="Type and press Enter" autocomplete="off">
+            <button onclick="sendInput()">Send</button>
         </div>
     </main>
 
@@ -71,7 +71,6 @@
         <p>© 2025 Jesse · -What a headache this crap is-</p>
     </footer>
 
-    <!-- Fixed WebAssembly loader -->
     <script src="https://cdn.jsdelivr.net/gh/jessejputnam/wasm-rpg@main/wasm-rpg.js"></script>
     <script>
         let inputBuffer = [];
@@ -82,10 +81,7 @@
             output.textContent += text;
             output.scrollTop = output.scrollHeight;
         }
-
-        function println(text = "") {
-            print(text + "\n");
-        }
+        function println(text = "") { print(text + "\n"); }
 
         function sendInput() {
             const value = inputField.value.trim();
@@ -100,17 +96,12 @@
             if (e.key === "Enter") sendInput();
         });
 
-        // Start the game
-        println("Starting Jesse's RPG Battle Arena...\n");
-        println("Engine loading — please wait...\n");
-
+        println("Loading Little Game...\n");
         const Module = {
             print: text => println(text),
             printErr: text => println("ERROR: " + text),
-            preRun: [],
-            postRun: [],
             onRuntimeInitialized: () => {
-                println("\nEngine ready! Starting game...\n");
+                println("\nGame ready! Starting...\n");
                 Module.callMain();
             },
             locateFile: (path) => "https://cdn.jsdelivr.net/gh/jessejputnam/wasm-rpg@main/" + path,
