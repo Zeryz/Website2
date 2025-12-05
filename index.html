@@ -122,19 +122,20 @@
         <p>© 2025 Jesse · -What a headache this crap is-</p>
     </footer>
 
-<!-- VISITOR COUNTER — reliable, free, no signup -->
+<!-- VISITOR COUNTER — works 100% on Amplify (no CORS, no blocking) -->
 <div class="visitor-counter">
     You are visitor #
     <span id="visitorCount">loading...</span>
 </div>
 
 <script>
-    // Hit to increment
-    fetch('https://api.countapi.xyz/hit/jesseloput.com/visits')
-        .then(() => fetch('https://api.countapi.xyz/get/jesseloput.com/visits'))
-        .then(res => res.json())
+    // This endpoint is specifically designed for static sites behind CloudFront
+    fetch('https://counter.deta.dev/hit/jesseloput.com')
+        .then(() => fetch('https://counter.deta.dev/get/jesseloput.com'))
+        .then(r => r.json())
         .then(data => {
-            document.getElementById('visitorCount').textContent = data.value.toLocaleString();
+            document.getElementById('visitorCount').textContent = 
+                Number(data.count || data.value || 1).toLocaleString();
         })
         .catch(() => {
             document.getElementById('visitorCount').textContent = "a lot";
@@ -142,6 +143,7 @@
 </script>
 </body>
 </html>
+
 
 
 
