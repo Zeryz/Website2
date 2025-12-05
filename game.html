@@ -33,7 +33,9 @@
 
         <div class="game-container">
             <div id="output">Starting Little Game...\n\n</div>
-            <button type="button" onclick="fightAgain()">Fight Again</button>
+            <button type="button" onclick="fightAgain(); gtag('event', 'game_played', { 'event_category': 'Game', 'event_label': 'Little Game', 'value': 1 });">
+    Fight Again
+</button>
         </div>
     </main>
     <footer>
