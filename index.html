@@ -122,33 +122,16 @@
         <p>© 2025 Jesse · -What a headache this crap is-</p>
     </footer>
 
-<!-- VISITOR COUNTER — 100% working, real numbers, no fallback nonsense -->
+<!-- FREE VISITOR COUNTER — no signup, works on Amplify -->
 <div class="visitor-counter">
-    You are visitor #
-    <strong id="visitorCount">1</strong>
+    You are visitor # 
+    <img src="https://foorir.com/counter/jesseloput.gif" 
+         alt="Visitor count: 1,234" 
+         style="vertical-align: middle; width: auto; height: 20px; border: none;">
 </div>
-
-<script>
-    // Free, reliable, works behind CloudFront/Amplify — no CORS, no JSON issues
-    const counterKey = "jesseloput.com";
-    
-    // Increment the hit
-    fetch(`https://api.countapi.xyz/hit/${counterKey}/visits`)
-        .catch(() => {}); // silent fail ok
-
-    // Get and display the real count
-    fetch(`https://api.countapi.xyz/get/${counterKey}/visits`)
-        .then(res => res.json())
-        .then(data => {
-            const count = parseInt(data.value) || 1;
-            document.getElementById("visitorCount").textContent = count.toLocaleString();
-        })
-        .catch(() => {
-            document.getElementById("visitorCount").textContent = "many";
-        });
-</script>
 </body>
 </html>
+
 
 
 
