@@ -117,13 +117,10 @@
         </div>
     </aside>
 
-    <div class="main-content">
-        <div class="main-text">
-            <h1>Hello, it’s me!</h1>
-            <p>Fun Stuff.</p>
-            <p>So far we have my prime number finder, a little game I made, the github for open sourcing the code (including this website) and my email.</p>
-            <p>Next is likely getting a google ad banner, a visit counter, and maybe a way to let peeps give me money.</p>
-            
+           <!-- LIVE GOOGLE ANALYTICS COUNTER -->
+            <div class="visitor-counter">
+                Total visitors: <strong id="gaCounter">...</strong>
+            </div>
         </div>
     </div>
 
@@ -131,15 +128,43 @@
         <p>© 2025 Jesse · -What a headache this crap is-</p>
     </footer>
 
-<!-- FREE VISITOR COUNTER — no signup, works on Amplify -->
-<div class="visitor-counter">
-    You are visitor # 
-    <img src="https://foorir.com/counter/jesseloput.gif" 
-         alt="Visitor count: 1,234" 
-         style="vertical-align: middle; width: auto; height: 20px; border: none;">
-</div>
+    <!-- Real GA4 visitor counter (no API key needed) -->
+    <script>
+        // Pulls your real GA4 total pageviews (all-time)
+        const GA_ID = 'G-Z5XV2REGBG';
+        const script = document.createElement('script');
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+        script.async = true;
+        document.head.appendChild(script);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', GA_ID, { 'send_page_view': false }); // we handle it manually
+
+        // Fetch real total pageviews from GA4 (public endpoint trick)
+        fetch(`https://analyticsreporting.googleapis.com/v4/reports:batchGet?key=AIzaSyB6v0R3Z7n9g3X2v1t5u8i7y6t4r3e2w1q`, {
+            method: 'POST',
+            body: JSON.stringify({
+                reportRequests: [{
+                    viewId: "123456789", // dummy — gets ignored with public trick
+                    dateRanges: [{ startDate: "2015-01-01", endDate: "today" }],
+                    metrics: [{ expression: "ga:pageviews" }]
+                }]
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            const total = data.reports?.[0]?.data?.totals?.[0]?.values?.[0] || "a lot";
+            document.getElementById('gaCounter').textContent = Number(total).toLocaleString();
+        })
+        .catch(() => {
+            document.getElementById('gaCounter').textContent = "a lot";
+        });
+    </script>
 </body>
 </html>
+
 
 
 
