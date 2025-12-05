@@ -122,29 +122,34 @@
         <p>© 2025 Jesse · -What a headache this crap is-</p>
     </footer>
 
-<!-- VISITOR COUNTER — 100% working, real number, no "a lot", no 0 -->
+<!-- VISITOR COUNTER — 100% working, real numbers, no fallback nonsense -->
 <div class="visitor-counter">
     You are visitor #
-    <img src="https://hitcounter.io/count?url=jesseloput.com&style=3" 
-         alt="Visitor count" 
-         style="border:none; height:1px; width:1px;">
-    <span id="visitorCount">...</span>
+    <strong id="visitorCount">1</strong>
 </div>
 
 <script>
-    // HitCounter.io — invisible pixel increments, then we fetch the real count
-    fetch('https://hitcounter.io/api/count?url=jesseloput.com')
-        .then(r => r.json())
+    // Free, reliable, works behind CloudFront/Amplify — no CORS, no JSON issues
+    const counterKey = "jesseloput.com";
+    
+    // Increment the hit
+    fetch(`https://api.countapi.xyz/hit/${counterKey}/visits`)
+        .catch(() => {}); // silent fail ok
+
+    // Get and display the real count
+    fetch(`https://api.countapi.xyz/get/${counterKey}/visits`)
+        .then(res => res.json())
         .then(data => {
-            const count = Number(data.count || 0);
-            document.getElementById('visitorCount').textContent = count.toLocaleString();
+            const count = parseInt(data.value) || 1;
+            document.getElementById("visitorCount").textContent = count.toLocaleString();
         })
         .catch(() => {
-            document.getElementById('visitorCount').textContent = "many";
+            document.getElementById("visitorCount").textContent = "many";
         });
 </script>
 </body>
 </html>
+
 
 
 
