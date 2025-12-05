@@ -127,17 +127,25 @@
         <p>© 2025 Jesse · -What a headache this crap is-</p>
     </footer>
 
-    <!-- Visitor counter script -->
-    <script src="https://api.countapi.xyz/hit/jesseloput.com/visits"></script>
-    <script>
-        fetch('https://api.countapi.xyz/get/jesseloput.com/visits')
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('visitorCount').textContent = data.value.toLocaleString();
-            })
-            .catch(() => {
-                document.getElementById('visitorCount').textContent = "a lot";
-            });
-    </script>
+<!-- VISITOR COUNTER — now works everywhere -->
+<div class="visitor-counter">
+    You are visitor #
+    <span id="visitorCount">loading...</span>
+</div>
+
+<!-- Reliable counter (works on Amplify) -->
+<script>
+    fetch('https://api.counter.dev/hit/jesseloput.com')
+        .then(() => fetch('https://api.counter.dev/get/jesseloput.com'))
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('visitorCount').textContent = 
+                Number(data.count).toLocaleString();
+        })
+        .catch(() => {
+            document.getElementById('visitorCount').textContent = "a lot";
+        });
+</script>
 </body>
 </html>
+
