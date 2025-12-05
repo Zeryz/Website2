@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) — still here, quietly tracking everything in the background -->
+    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z5XV2REGBG"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -24,13 +24,36 @@
         .tagline { font-size:1.3rem; opacity:0.9; margin-bottom:3rem; }
         .links a { display:block; color:#00f5ff; text-decoration:none; font-size:1.4rem; margin:1rem 0; padding:0.8rem 1.2rem; border-radius:12px; transition:all .3s; }
         .links a:hover { background:#00f5ff20; transform:translateX(10px); }
+        .portfolio {
+            margin-top: 2rem;
+            border-top: 2px solid #00f5ff40;
+            padding-top: 2rem;
+        }
+        .portfolio h3 {
+            color: #00f5ff;
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .stock-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .stock-item:hover { background: #00f5ff10; }
+        .stock-symbol { font-weight: bold; font-size: 1.1rem; }
+        .stock-pct { color: #00f5ff; text-shadow: 0 0 10px #00f5ff; font-weight: bold; }
         .main-content { padding:4rem 3rem; display:flex; align-items:center; justify-content:center; text-align:center; }
         .main-text { max-width:900px; }
         .main-text h1 { font-size:clamp(3rem,10vw,7rem); margin-bottom:2rem; background:linear-gradient(90deg,#00f5ff,#80f8ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
         .main-text p { font-size:clamp(1.3rem,4vw,1.8rem); opacity:0.9; max-width:800px; margin:1.5rem auto; line-height:1.7; }
         footer { grid-column:1/-1; text-align:center; padding:2rem; font-size:0.9rem; opacity:0.7; background:#000; }
 
-        @media (max-width:900px) { body { grid-template-columns:1fr; } .sidebar { height:auto; position:relative; border-right:none; border-bottom:3px solid #00f5ff; padding:2rem 1.5rem; text-align:center; } .photo { width:140px; height:140px; } .main-content { padding:3rem 2rem; } }
+        @media (max-width:900px) { body { grid-template-columns:1fr; } .sidebar { height:auto; position:relative; border-right:none; border-bottom:3px solid #00f5ff; padding:2rem 1.5rem; text-align:center; } .photo { width:140px; height:140px; } .main-content { padding:3rem 2rem; } .stock-item { flex-direction:column; align-items:flex-start; } .stock-pct { margin-top:0.2rem; } }
         @media (max-width:500px) { .photo { width:120px; height:120px; } .name { font-size:2.2rem; } .main-text p { font-size:1.4rem; } }
     </style>
 </head>
@@ -38,7 +61,7 @@
 
     <aside class="sidebar">
         <img src="images/photo.jpg" alt="Jesse" class="photo">
-        <div class="name="name">Jesse</div>
+        <div class="name">Jesse</div>
         <div class="tagline">Hmmm</div>
         <div class="links">
             <a href="prime.html">Prime & Divisor Finder</a>
@@ -46,11 +69,144 @@
             <a href="https://github.com/Zeryz" target="_blank">GitHub</a>
             <a href="mailto:JesseWorkLoput@gmail.com">Email</a>
         </div>
+
+        <!-- STOCK PORTFOLIO — symbol + percentage only -->
+        <div class="portfolio">
+            <h3>Portfolio</h3>
+            <div class="stock-item">
+                <span class="stock-symbol">TSLA</span>
+                <span class="stock-pct">21.8%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">NVDA</span>
+                <span class="stock-pct">9.9%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">BTC</span>
+                <span class="stock-pct">4.9%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">VYM</span>
+                <span class="stock-pct">3.3%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">AMD</span>
+                <span class="stock-pct">3.3%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">ADBE</span>
+                <span class="stock-pct">2.6%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">TXN</span>
+                <span class="stock-pct">2.6%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">SCHD</span>
+                <span class="stock-pct">2.5%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">ARKK</span>
+                <span class="stock-pct">2.5%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">VOO</span>
+                <span class="stock-pct">2.5%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">IBM</span>
+                <span class="stock-pct">2.5%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">CVX</span>
+                <span class="stock-pct">2.5%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">OXY</span>
+                <span class="stock-pct">2.5%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">PPLT</span>
+                <span class="stock-pct">2.5%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">PLTM</span>
+                <span class="stock-pct">2.5%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">SLV</span>
+                <span class="stock-pct">2.5%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">SIVR</span>
+                <span class="stock-pct">2.5%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">GOOGL</span>
+                <span class="stock-pct">2.0%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">GOOG</span>
+                <span class="stock-pct">2.0%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">AAPL</span>
+                <span class="stock-pct">1.8%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">UBER</span>
+                <span class="stock-pct">1.7%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">RTX</span>
+                <span class="stock-pct">1.7%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">U</span>
+                <span class="stock-pct">1.7%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">PLNT</span>
+                <span class="stock-pct">1.7%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">AMZN</span>
+                <span class="stock-pct">1.6%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">SPOT</span>
+                <span class="stock-pct">1.6%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">SHIB</span>
+                <span class="stock-pct">1.0%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">SN</span>
+                <span class="stock-pct">0.8%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">GRAB</span>
+                <span class="stock-pct">0.8%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">CPSH</span>
+                <span class="stock-pct">0.8%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">GCT</span>
+                <span class="stock-pct">0.8%</span>
+            </div>
+            <div class="stock-item">
+                <span class="stock-symbol">VZ</span>
+                <span class="stock-pct">0.8%</span>
+            </div>
+        </div>
     </aside>
 
     <div class="main-content">
         <div class="main-text">
-            <h1>Hello, it’s me!</h1>
+            <h1>Hello, it's me!</h1>
             <p>Fun Stuff.</p>
             <p>So far we have my prime number finder, a little game I made, the github for open sourcing the code (including this website) and my email.</p>
             <p>Next is likely getting a google ad banner, a visit counter, and maybe a way to let peeps give me money.</p>
