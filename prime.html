@@ -35,7 +35,7 @@
         </section>
         <div class="tool">
             <input type="number" id="numInput" placeholder="Try 42 or 97" min="2">
-            <button onclick="runPrime()">Find out :D</button>
+            <button onclick="runPrime(); gtag('event', 'prime_tool_used', { 'page': 'prime.html' });">Find out :D</button>
             <pre id="output"></pre>
         </div>
     </main>
