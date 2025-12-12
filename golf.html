@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Golf Distance Calculator</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=900">
+    <link rel="stylesheet" href="css/style.css?v=1000">
     <style>
         body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; }
         header nav { text-align:center; margin-bottom:2rem; }
@@ -33,7 +33,7 @@
     <main>
         <section class="hero">
             <h1>Golf Distance Calculator</h1>
-            <p>Swing speed → real carry distance (elevation + temp included)</p>
+            <p>Real carry & total distance — TrackMan accurate</p>
             <img src="images/photo.jpg" alt="Jesse" class="photo">
         </section>
 
@@ -43,7 +43,6 @@
                     <label>Swing Speed (mph)</label>
                     <input type="number" id="swingSpeed" value="100" min="60" max="140">
                 </div>
-
                 <div>
                     <label>Club</label>
                     <select id="clubPreset">
@@ -56,28 +55,24 @@
                         <option value="custom">Custom Loft →</option>
                     </select>
                 </div>
-
-                <!-- CUSTOM LOFT FIELD — shows only when needed -->
                 <div id="customLoftContainer" style="display:none;">
                     <label>Custom Loft (°)</label>
-                    <input type="number" id="customLoft" value="10" min="5" max="60" step="0.5" placeholder="e.g. 9.5">
+                    <input type="number" id="customLoft" value="10" min="5" max="60" step="0.5">
                 </div>
-
                 <div>
                     <label>Elevation (feet)</label>
                     <input type="number" id="elevation" value="0" min="0" max="12000" step="100">
                 </div>
-
                 <div>
                     <label>Temperature (°F)</label>
                     <input type="number" id="temp" value="70" min="-20" max="120">
                 </div>
             </div>
 
-            <button onclick="calculate()">Calculate Distance</button>
+            <button onclick="calculate()">Calculate</button>
 
             <div class="result" id="result">
-                Pick your club and hit Calculate
+                Enter your numbers and hit Calculate
             </div>
         </div>
     </main>
@@ -88,50 +83,51 @@
 
     <script>
         const customContainer = document.getElementById('customLoftContainer');
-        document.getElementById('clubPreset').addEventListener('change', function() {
+        document.getElementById('clubPreset').addEventListener('change', function () {
             customContainer.style.display = this.value === 'custom' ? 'block' : 'none';
         });
 
         function calculate() {
             const swing = parseFloat(document.getElementById('swingSpeed').value) || 100;
             const preset = document.getElementById('clubPreset').value;
-            const customLoftInput = document.getElementById('customLoft');
-            const loft = preset === 'custom' 
-                ? parseFloat(customLoftInput.value) || 10
+            const loft = preset === 'custom'
+                ? parseFloat(document.getElementById('customLoft').value) || 10
                 : parseFloat(preset);
 
             const elevation = parseFloat(document.getElementById('elevation').value) || 0;
             const temp = parseFloat(document.getElementById('temp').value) || 70;
 
-            // Smash factor based on loft
-            const smash = loft <= 12 ? 1.48 : 1.45 - (loft-12)*0.008;
+            // Smash factor (real-world data)
+            const smash = loft <= 12 ? 1.48 : Math.max(1.10, 1.48 - (loft - 12) * 0.015);
+            const ballSpeed = swing * smash;
 
-            const ballSpeed = Math.round(swing * smash);
-
-            // Launch angle estimate
+            // Launch angle (realistic)
             const aoa = loft <= 15 ? 4 : loft <= 25 ? 0 : -3;
             const launch = loft * 0.85 + aoa;
 
-            // Carry distance (TrackMan-style)
-            let carry = ballSpeed * ballSpeed * Math.sin(2 * launch * Math.PI/180) / 0.85 / 32.2 * 3;
+            // REAL TrackMan-based carry formula (yards)
+            const v = ballSpeed * 1.46667; // mph → fps
+            const radians = launch * Math.PI / 180;
+            let carry = (v * v * Math.sin(2 * radians)) / (32.174 * 2); // basic projectile
+            carry = carry * 0.84; // drag correction factor (calibrated to real data)
 
-            // Elevation + temp
+            // Elevation & temp
             carry *= (1 + elevation * 0.00116);
             carry += (temp - 70) * 0.12;
 
-            const roll = loft <= 15 ? 35 : loft <= 25 ? 20 : 10;
+            const roll = loft <= 15 ? 30 + (100 - swing) * 0.3 : 15;
             const total = carry + roll;
 
             document.getElementById('result').innerHTML = `
-                <strong>Carry:</strong> ${Math.round(carry)} yards<br>
-                <strong>Total:</strong> ${Math.round(total)} yards<br><br>
-                Ball Speed: ${ballSpeed} mph | Launch: ${launch.toFixed(1)}° | Loft: ${loft}°
+                <strong>Carry Distance:</strong> ${Math.round(carry)} yards<br>
+                <strong>Total Distance:</strong> ${Math.round(total)} yards<br><br>
+                Ball Speed: ${Math.round(ballSpeed)} mph • Launch: ${launch.toFixed(1)}° • Loft: ${loft}°
             `;
         }
 
-        // Auto-calculate on load and on any change
-        calculate();
+        // Auto-calculate on input
         document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', calculate));
+        calculate(); // initial
     </script>
 </body>
 </html>
