@@ -5,174 +5,162 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pong</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=100">
+    <link rel="stylesheet" href="css/style.css?v=1100">
     <style>
-        body { 
-            margin:0; 
-            background:#000; 
-            color:#fff; 
-            font-family:system-ui,-apple-system,sans-serif; 
-            min-height:100vh; 
-            display:flex; 
-            flex-direction:column; 
-            align-items:center; 
-            justify-content:center;
-        }
-        header nav { 
-            position:absolute; 
-            top:20px; 
-            left:50%; 
-            transform:translateX(-50%);
-        }
-        header a { 
-            color:#00f5ff; 
-            text-decoration:none; 
-            font-size:1.2rem; 
-        }
-        canvas { 
-            border:4px solid #00f5ff; 
-            box-shadow:0 0 50px #00f5ff60; 
-            border-radius:12px; 
-        }
-        .score {
-            position:absolute;
-            top:80px;
-            font-size:3rem;
-            font-weight:bold;
-            color:#00f5ff;
-            text-shadow:0 0 20px #00f5ff;
-        }
+        body { margin:0; background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        header nav { position:absolute; top:20px; left:20px; }
+        header a { color:#00f5ff; text-decoration:none; font-size:1.2rem; }
+        canvas { border:4px solid #00f5ff; box-shadow:0 0 40px #00f5ff60; image-rendering:pixelated; touch-action:none; }
+        .score { position:absolute; top:80px; font-size:3rem; font-weight:bold; color:#00f5ff; text-shadow:0 0 20px #00f5ff; }
         .score-left  { left:20%; }
         .score-right { right:20%; }
-        footer { 
-            position:absolute; 
-            bottom:20px; 
-            font-size:0.9rem; 
-            opacity:0.7; 
+        .game-over { position:absolute; font-size:4rem; color:#00f5ff; text-shadow:0 0 30px #00f5ff; display:none; }
+        footer { position:absolute; bottom:20px; font-size:0.9rem; opacity:0.7; }
+        @media (max-width:900px) {
+            canvas { width:95vw; height:60vh; }
+            .score { font-size:2.5rem; top:60px; }
+            .score-left { left:10%; }
+            .score-right { right:10%; }
         }
     </style>
 </head>
 <body>
     <header><nav><a href="index.html">← Home</a></nav></header>
 
-    <h1 style="margin-bottom:1rem; background:linear-gradient(90deg,#00f5ff,#80f8ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; font-size:clamp(3rem,10vw,6rem);">
-        PONG
-    </h1>
+    <canvas id="pong" width="800" height="500"></canvas>
 
     <div class="score score-left" id="playerScore">0</div>
     <div class="score score-right" id="aiScore">0</div>
 
-    <canvas id="game" width="800" height="500"></canvas>
+    <div class="game-over" id="gameOver">YOU WIN!</div>
 
     <footer>
         <p>© 2025 Jesse · -What a headache this crap is-</p>
     </footer>
 
     <script>
-        const canvas = document.getElementById('game');
-        const ctx = canvas.getContext('2d');
-        const playerScoreEl = document.getElementById('playerScore');
-        const aiScoreEl = document.getElementById('aiScore');
+        const canvas = document.getElementById("pong");
+        const ctx = canvas.getContext("2d");
+        const playerScoreEl = document.getElementById("playerScore");
+        const aiScoreEl = document.getElementById("aiScore");
+        const gameOverEl = document.getElementById("gameOver");
 
-        let playerY = 200;
-        let aiY = 200;
-        let ballX = 400;
-        let ballY = 250;
-        let ballSpeedX = 5;
-        let ballSpeedY = 3;
-        let playerScore = 0;
-        let aiScore = 0;
+        // Responsive canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth * 0.9;
+            canvas.height = window.innerHeight * 0.6;
+        }
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
 
-        const paddleHeight = 100;
-        const paddleWidth = 15;
-        const ballSize = 12;
-
-        document.addEventListener('keydown', e => {
-            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') playerY = Math.max(0, playerY - 30);
-            if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') playerY = Math.min(canvas.height - paddleHeight, playerY + 30);
-        });
+        let ball = { x: canvas.width/2, y: canvas.height/2, dx: 5, dy: 5, radius: 10 };
+        let paddleHeight = 100, paddleWidth = 16;
+        let player = { y: canvas.height/2 - paddleHeight/2 };
+        let ai = { y: canvas.height/2 - paddleHeight/2 };
+        let playerScore = 0, aiScore = 0;
+        const winningScore = 10;
 
         function draw() {
-            // Clear
-            ctx.fillStyle = '#000';
+            ctx.fillStyle = "#000";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Center line
             ctx.setLineDash([10, 10]);
-            ctx.strokeStyle = '#00f5ff40';
+            ctx.strokeStyle = "#00f5ff40";
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, 0);
-            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.moveTo(canvas.width/2, 0);
+            ctx.lineTo(canvas.width/2, canvas.height);
             ctx.stroke();
             ctx.setLineDash([]);
 
             // Paddles
-            ctx.fillStyle = '#00f5ff';
-            ctx.fillRect(20, playerY, paddleWidth, paddleHeight);           // Player
-            ctx.fillRect(canvas.width - 35, aiY, paddleWidth, paddleHeight); // AI
+            ctx.fillStyle = "#00f5ff";
+            ctx.fillRect(20, player.y, paddleWidth, paddleHeight);
+            ctx.fillRect(canvas.width - 36, ai.y, paddleWidth, paddleHeight);
 
             // Ball
             ctx.beginPath();
-            ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
-            ctx.fillStyle = '#fff';
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff";
             ctx.fill();
-
-            // Scores
-            playerScoreEl.textContent = playerScore;
-            aiScoreEl.textContent = aiScore;
         }
 
         function update() {
-            // Ball movement
-            ballX += ballSpeedX;
-            ballY += ballSpeedY;
+            ball.x += ball.dx;
+            ball.y += ball.dy;
 
-            // Ball bounce top/bottom
-            if (ballY <= ballSize || ballY >= canvas.height - ballSize) ballSpeedY *= -1;
+            if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) ball.dy *= -1;
 
-            // AI paddle follows ball (with slight delay)
-            if (aiY + paddleHeight / 2 < ballY) aiY += 4;
-            if (aiY + paddleHeight / 2 > ballY) aiY -= 4;
-
-            // Player paddle collision
-            if (ballX - ballSize < 35 && ballY > playerY && ballY < playerY + paddleHeight) {
-                ballSpeedX = Math.abs(ballSpeedX) + 0.2;
-                ballSpeedY += (ballY - (playerY + paddleHeight / 2)) * 0.1;
+            // Player collision
+            if (ball.x - ball.radius < 36 && ball.y > player.y && ball.y < player.y + paddleHeight) {
+                ball.dx = -ball.dx * 1.05;
+                let deltaY = ball.y - (player.y + paddleHeight/2);
+                ball.dy = deltaY * 0.3;
             }
 
-            // AI paddle collision
-            if (ballX + ballSize > canvas.width - 35 && ballY > aiY && ballY < aiY + paddleHeight) {
-                ballSpeedX = -Math.abs(ballSpeedX) - 0.2;
-                ballSpeedY += (ballY - (aiY + paddleHeight / 2)) * 0.1;
+            // AI collision
+            if (ball.x + ball.radius > canvas.width - 36 && ball.y > ai.y && ball.y < ai.y + paddleHeight) {
+                ball.dx = -ball.dx;
+                let deltaY = ball.y - (ai.y + paddleHeight/2);
+                ball.dy = deltaY * 0.3;
             }
 
             // Scoring
-            if (ballX < 0) { aiScore++; resetBall(); }
-            if (ballX > canvas.width) { playerScore++; resetBall(); }
+            if (ball.x < 0) { aiScore++; aiScoreEl.textContent = aiScore; resetBall(); }
+            if (ball.x > canvas.width) { playerScore++; playerScoreEl.textContent = playerScore; resetBall(); }
 
-            // Victory
-            if (playerScore >= 10 || aiScore >= 10) {
-                alert(`${playerScore >= 10 ? 'You' : 'AI'} win! Final score: ${playerScore}-${aiScore}`);
-                playerScore = aiScore = 0;
-                resetBall();
+            // AI movement (medium difficulty)
+            if (ai.y + paddleHeight/2 < ball.y - 35) ai.y += 4;
+            if (ai.y + paddleHeight/2 > ball.y + 35) ai.y -= 4;
+
+            // Win
+            if (playerScore >= winningScore || aiScore >= winningScore) {
+                gameOverEl.textContent = playerScore >= winningScore ? "YOU WIN!" : "AI WINS!";
+                gameOverEl.style.display = "block";
+                ball.dx = ball.dy = 0;
             }
         }
 
         function resetBall() {
-            ballX = canvas.width / 2;
-            ballY = canvas.height / 2;
-            ballSpeedX = (Math.random() > 0.5 ? 5 : -5);
-            ballSpeedY = Math.random() * 6 - 3;
+            ball.x = canvas.width/2;
+            ball.y = canvas.height/2;
+            ball.dx = -ball.dx;
+            ball.dy = 5 * (Math.random() > 0.5 ? 1 : -1);
         }
 
+        // Mouse control (desktop)
+        canvas.addEventListener("mousemove", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            player.y = e.clientY - rect.top - paddleHeight / 2;
+            player.y = Math.max(0, Math.min(player.y, canvas.height - paddleHeight));
+        });
+
+        // Touch control (phone)
+        canvas.addEventListener("touchmove", (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            player.y = touch.clientY - rect.top - paddleHeight / 2;
+            player.y = Math.max(0, Math.min(player.y, canvas.height - paddleHeight));
+        });
+
+        // Tap to restart after game over
+        canvas.addEventListener("click", () => {
+            if (playerScore >= winningScore || aiScore >= winningScore) {
+                playerScore = aiScore = 0;
+                playerScoreEl.textContent = aiScoreEl.textContent = 0;
+                gameOverEl.style.display = "none";
+                resetBall();
+            }
+        });
+
         function gameLoop() {
-            update();
             draw();
+            update();
             requestAnimationFrame(gameLoop);
         }
 
-        resetBall();
         gameLoop();
     </script>
 </body>
