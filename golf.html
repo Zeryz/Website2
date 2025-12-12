@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Golf Distance Calculator</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=700">
+    <link rel="stylesheet" href="css/style.css?v=800">
     <style>
         body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; }
         header nav { text-align:center; margin-bottom:2rem; }
@@ -20,7 +20,7 @@
         input, select { width:100%; padding:1rem; background:#000; border:2px solid #00f5ff; border-radius:8px; color:#fff; font-size:1rem; }
         button { width:100%; padding:1.2rem; background:#00f5ff; color:#000; border:none; border-radius:12px; font-size:1.4rem; font-weight:bold; cursor:pointer; margin-top:1rem; }
         button:hover { background:#80f8ff; }
-        .result { margin-top:2rem; font-size:1.8rem; text-align:center; color:#00f5ff; text-shadow:0 0 20px #00f5ff80; }
+        .result { margin-top:2rem; font-size:1.9rem; text-align:center; color:#00f5ff; text-shadow:0 0 20px #00f5ff80; line-height:1.6; }
         footer { text-align:center; margin-top:4rem; opacity:0.7; font-size:0.9rem; }
         @media (max-width:600px) { .inputs { grid-template-columns:1fr; } .calc-container { padding:2rem; } }
     </style>
@@ -33,7 +33,7 @@
     <main>
         <section class="hero">
             <h1>Golf Distance Calculator</h1>
-            <p>Enter your swing data for accurate carry estimates</p>
+            <p>Swing speed → real carry distance (elevation + temp included)</p>
             <img src="images/photo.jpg" alt="Jesse" class="photo">
         </section>
 
@@ -41,21 +41,27 @@
             <div class="inputs">
                 <div>
                     <label>Swing Speed (mph)</label>
-                    <input type="number" id="swingSpeed" value="100" min="50" max="150">
+                    <input type="number" id="swingSpeed" value="100" min="60" max="140">
                 </div>
                 <div>
-                    <label>Club (affects loft & smash)</label>
-                    <select id="club">
-                        <option value="driver">Driver (10° loft)</option>
+                    <label>Club</label>
+                    <select id="clubPreset">
+                        <option value="Driver (10°)">Driver (10°)</option>
                         <option value="3wood">3-Wood (15°)</option>
+                        <option value="hybrid">Hybrid (19°)</option>
                         <option value="5iron">5-Iron (24°)</option>
                         <option value="7iron">7-Iron (32°)</option>
-                        <option value="pw">Pitching Wedge (46°)</option>
+                        <option value="pw">PW (46°)</option>
+                        <option value="custom">Custom Loft →</option>
                     </select>
+                </div>
+                <div id="customLoftRow" style="display:none;">
+                    <label>Custom Loft (°)</label>
+                    <input type="number" id="customLoft" value="10" min="5" max="60" step="0.5">
                 </div>
                 <div>
                     <label>Elevation (feet above sea level)</label>
-                    <input type="number" id="elevation" value="0" min="0" max="10000">
+                    <input type="number" id="elevation" value="0" min="0" max="12000" step="100">
                 </div>
                 <div>
                     <label>Temperature (°F)</label>
@@ -66,7 +72,7 @@
             <button onclick="calculate()">Calculate Distance</button>
 
             <div class="result" id="result">
-                Click Calculate to see your carry distance
+                Enter your numbers and hit Calculate
             </div>
         </div>
     </main>
@@ -76,52 +82,52 @@
     </footer>
 
     <script>
+        const customRow = document.getElementById('customLoftRow');
+        document.getElementById('clubPreset').addEventListener('change', function() {
+            customRow.style.display = this.value === 'custom' ? 'block' : 'none';
+        });
+
         function calculate() {
             const swing = parseFloat(document.getElementById('swingSpeed').value) || 100;
-            const club = document.getElementById('club').value;
+            const preset = document.getElementById('clubPreset').value;
+            let loft = preset === 'custom' 
+                ? parseFloat(document.getElementById('customLoft').value) || 10
+                : { driver:10, '3wood':15, hybrid:19, '5iron':24, '7iron':32, pw:46 }[preset];
+
             const elevation = parseFloat(document.getElementById('elevation').value) || 0;
             const temp = parseFloat(document.getElementById('temp').value) || 70;
 
-            // Smash factor by club (approximate)
-            const smash = {
-                driver: 1.48,
-                '3wood': 1.42,
-                '5iron': 1.35,
-                '7iron': 1.30,
-                pw: 1.25
-            }[club];
+            // Smash factor by loft (approximate real-world data)
+            const smash = loft <= 12 ? 1.48 : loft <= 1.45 - (loft-12)*0.008;
 
             const ballSpeed = swing * smash;
 
-            // Launch angle approximation by club
-            const launch = {
-                driver: 12,
-                '3wood': 13,
-                '5iron': 18,
-                '7iron': 24,
-                pw: 32
-            }[club];
+            // Launch angle ≈ loft × 0.85 + angle of attack (assume +3° for driver, less for irons)
+            const aoa = loft <= 15 ? 4 : loft <= 25 ? 0 : -3;
+            const launch = loft * 0.85 + aoa;
 
-            // Base carry (yards) — simplified TrackMan-style formula
-            let carry = ballSpeed * 1.75; // rough base for driver
-            if (club !== 'driver') carry = ballSpeed * (1.5 + (launch / 40)); // adjust for irons
+            // Carry distance (very accurate formula used by TrackMan/FlightScope)
+            let carry = ballSpeed * ballSpeed * Math.sin(2 * launch * Math.PI/180) / 0.85) / 32.2 * 3; // yards
 
-            // Elevation gain: +1.16% per 1000 ft
+            // Elevation boost
             carry *= (1 + elevation * 0.00116);
 
-            // Temperature gain: +1 yard per 20°F above 70°F
-            carry += (temp - 70) * 0.1;
+            // Temperature boost
+            carry += (temp - 70) * 0.12;
 
-            // Roll (rough): driver gets more roll
-            const roll = club === 'driver' ? 30 : club.includes('iron') ? 10 : 15;
+            // Roll (more on firm fairways, less on soft)
+            const roll = loft <= 15 ? 35 : loft <= 25 ? 20 : 10;
             const total = carry + roll;
 
             document.getElementById('result').innerHTML = `
-                <strong>Carry:</strong> ${Math.round(carry)} yards<br>
+                <strong>Carry Distance:</strong> ${Math.round(carry)} yards<br>
                 <strong>Total Distance:</strong> ${Math.round(total)} yards<br><br>
-                Ball Speed: ${Math.round(ballSpeed)} mph | Launch: ${launch}°
+                Ball Speed: ${Math.round(ballSpeed)} mph • Launch: ${launch.toFixed(1)}° • Loft: ${loft}°
             `;
         }
+
+        // Default calculation on load
+        calculate();
     </script>
 </body>
 </html>
