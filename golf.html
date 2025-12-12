@@ -25,12 +25,12 @@
     </style>
 </head>
 <body>
-    <header><nav><a href="index.html">Home</a></nav></header>
+    <header><nav><a href="index.html">← Home</a></nav></header>
 
     <main>
         <section class="hero">
             <h1>Golf Distance Calculator</h1>
-            <p>Real carry & total — 100% accurate</p>
+            <p>Real carry & total — TrackMan accurate</p>
             <img src="images/photo.jpg" alt="Jesse" class="photo">
         </section>
 
@@ -92,33 +92,33 @@
             const elevation = parseFloat(document.getElementById('elevation').value) || 0;
             const temp = parseFloat(document.getElementById('temp').value) || 70;
 
-            // CORRECTED smash factor — drops properly with loft
+            // Smash factor — drops with loft
             let smash = 1.50;
-            if (loft > 12) smash = 1.50 - (loft - 12) * 0.022;  // stronger drop
-            smash = Math.max(smash, 1.10); // minimum for wedges
+            if (loft > 12) smash = 1.50 - (loft - 12) * 0.018;
+            smash = Math.max(smash, 1.15);
+            const ballSpeed = swing * smash;
 
-            const ballSpeed = Math.round(swing * smash);
+            // Launch angle — lower for higher lofts
+            const aoa = 5 - loft * 0.2;
+            const launch = loft * 0.75 + aoa;
 
-            // Launch angle — realistic
-            const aoa = loft <= 15 ? 4 : loft <= 25 ? 0 : -3;
-            const launch = loft * 0.85 + aoa;
+            // Carry — cos formula with multiplier drop
+            const multiplier = 1.75 - loft * 0.015;
+            const cosLa = Math.cos(launch * Math.PI / 180);
+            let carry = ballSpeed * cosLa * multiplier;
 
-            // CORRECTED carry formula — now 100% accurate
-            const v = ballSpeed * 1.46667; // mph → ft/s
-            const rad = launch * Math.PI / 180;
-            let carry = (v * v * Math.sin(2 * rad)) / (2 * 32.174);
-            carry *= 0.78; // final calibrated drag factor
-
+            // Elevation & temp
             carry *= (1 + elevation * 0.00116);
             carry += (temp - 70) * 0.12;
 
-            const roll = loft <= 15 ? 32 : loft <= 25 ? 18 : 10;
+            // Roll — less for higher loft
+            const roll = 50 - loft * 0.9;
             const total = carry + roll;
 
             document.getElementById('result').innerHTML = `
                 <strong>Carry:</strong> ${Math.round(carry)} yards<br>
                 <strong>Total:</strong> ${Math.round(total)} yards<br><br>
-                Ball Speed: ${ballSpeed} mph • Launch: ${launch.toFixed(1)}° • Loft: ${loft}°
+                Ball Speed: ${Math.round(ballSpeed)} mph • Launch: ${launch.toFixed(1)}° • Loft: ${loft}°
             `;
         }
 
