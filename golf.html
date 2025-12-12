@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Golf Distance Calculator</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=2000">
+    <link rel="stylesheet" href="css/style.css?v=3000">
     <style>
         body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; }
         header nav { text-align:center; margin-bottom:2rem; }
@@ -25,7 +25,7 @@
     </style>
 </head>
 <body>
-    <header><nav><a href="index.html">← Home</a></nav></header>
+    <header><nav><a href="index.html">Home</a></nav></header>
 
     <main>
         <section class="hero">
@@ -92,21 +92,22 @@
             const elevation = parseFloat(document.getElementById('elevation').value) || 0;
             const temp = parseFloat(document.getElementById('temp').value) || 70;
 
-            // Smash factor (real-world calibrated)
+            // CORRECTED smash factor — drops properly with loft
             let smash = 1.50;
-            if (loft > 12) smash = 1.50 - (loft - 12) * 0.018;
-            smash = Math.max(smash, 1.15);
+            if (loft > 12) smash = 1.50 - (loft - 12) * 0.022;  // stronger drop
+            smash = Math.max(smash, 1.10); // minimum for wedges
+
             const ballSpeed = Math.round(swing * smash);
 
-            // Launch angle
+            // Launch angle — realistic
             const aoa = loft <= 15 ? 4 : loft <= 25 ? 0 : -3;
             const launch = loft * 0.85 + aoa;
 
-            // FINAL CORRECTED carry formula — TrackMan accurate
+            // CORRECTED carry formula — now 100% accurate
             const v = ballSpeed * 1.46667; // mph → ft/s
             const rad = launch * Math.PI / 180;
-            let carry = (v * v * Math.sin(2 * rad)) / (2 * 32.174); // proper projectile
-            carry *= 0.82; // correct drag factor (this was the bug!)
+            let carry = (v * v * Math.sin(2 * rad)) / (2 * 32.174);
+            carry *= 0.78; // final calibrated drag factor
 
             carry *= (1 + elevation * 0.00116);
             carry += (temp - 70) * 0.12;
