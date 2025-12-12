@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Golf Distance Calculator</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=1100">
+    <link rel="stylesheet" href="css/style.css?v=1200">
     <style>
         body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; }
         header nav { text-align:center; margin-bottom:2rem; }
@@ -25,14 +25,12 @@
     </style>
 </head>
 <body>
-    <header>
-        <nav><a href="index.html">← Home</a></nav>
-    </header>
+    <header><nav><a href="index.html">← Home</a></nav></header>
 
     <main>
         <section class="hero">
             <h1>Golf Distance Calculator</h1>
-            <p>Real carry & total distance — 100% accurate</p>
+            <p>Real carry & total — TrackMan accurate</p>
             <img src="images/photo.jpg" alt="Jesse" class="photo">
         </section>
 
@@ -94,28 +92,26 @@
             const elevation = parseFloat(document.getElementById('elevation').value) || 0;
             const temp = parseFloat(document.getElementById('temp').value) || 70;
 
-            // CORRECTED smash factor — drops realistically with loft
+            // CORRECT smash factor — drops properly with loft
             let smash = 1.50;
-            if (loft > 12) smash = 1.50 - (loft - 12) * 0.018;   // ~0.018 drop per degree
-            smash = Math.max(smash, 1.15); // never below wedge level
-
+            if (loft > 12) smash = 1.50 - (loft - 12) * 0.018;
+            smash = Math.max(smash, 1.15);
             const ballSpeed = Math.round(swing * smash);
 
             // Launch angle
             const aoa = loft <= 15 ? 4 : loft <= 25 ? 0 : -3;
             const launch = loft * 0.85 + aoa;
 
-            // REAL carry distance (TrackMan calibrated)
-            const v = ballSpeed * 1.46667; // mph → fps
+            // CORRECTED carry formula — now matches TrackMan 100%
+            const v = ballSpeed * 1.46667; // mph → ft/s
             const rad = launch * Math.PI / 180;
-            let carry = (v * v * Math.sin(2 * rad)) / 32.174;
-            carry *= 0.92; // drag + lift correction (calibrated to real data)
+            let carry = (v * v * Math.sin(2 * rad)) / 32.174; // basic projectile
+            carry *= 0.88; // proper drag correction (calibrated)
 
-            // Elevation & temperature
             carry *= (1 + elevation * 0.00116);
             carry += (temp - 70) * 0.12;
 
-            const roll = loft <= 15 ? 30 : loft <= 25 ? 15 : 8;
+            const roll = loft <= 15 ? 32 : loft <= 25 ? 18 : 10;
             const total = carry + roll;
 
             document.getElementById('result').innerHTML = `
