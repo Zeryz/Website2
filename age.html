@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Age Calculator</title>
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/style.css?v=100">
+    <style>
+        body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; }
+        header nav { text-align:center; margin-bottom:2rem; }
+        header a { color:#00f5ff; text-decoration:none; font-size:1.2rem; }
+        .hero { text-align:center; margin-bottom:3rem; }
+        .hero h1 { font-size:clamp(3rem,10vw,6rem); background:linear-gradient(90deg,#00f5ff,#80f8ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+        .hero p { font-size:1.5rem; opacity:0.9; }
+        .photo { width:140px; height:140px; border-radius:50%; border:5px solid #00f5ff; box-shadow:0 0 40px #00f5ff60; }
+        .calc-container { background:#111; padding:3rem; border-radius:20px; border:4px solid #00f5ff; box-shadow:0 0 50px #00f5ff60; max-width:600px; margin:0 auto; }
+        .inputs { display:grid; gap:1.5rem; margin-bottom:2rem; }
+        label { display:block; margin-bottom:0.5rem; color:#00f5ff; font-weight:bold; }
+        input, select { width:100%; padding:1rem; background:#000; border:2px solid #00f5ff; border-radius:8px; color:#fff; font-size:1rem; }
+        button { width:100%; padding:1.2rem; background:#00f5ff; color:#000; border:none; border-radius:12px; font-size:1.4rem; font-weight:bold; cursor:pointer; margin-top:1rem; }
+        button:hover { background:#80f8ff; }
+        .result { margin-top:2rem; padding:1.5rem; background:#000; border-radius:12px; border:1px solid #00f5ff40; font-size:1.6rem; line-height:1.8; text-align:center; }
+        footer { text-align:center; margin-top:4rem; opacity:0.7; font-size:0.9rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav><a href="index.html">← Home</a></nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>Age Calculator</h1>
+            <p>How much life have you lived?</p>
+            <img src="images/photo.jpg" alt="Jesse" class="photo">
+        </section>
+
+        <div class="calc-container">
+            <div class="inputs">
+                <div>
+                    <label>Your Birthdate</label>
+                    <input type="date" id="birthdate">
+                </div>
+                <div>
+                    <label>Gender</label>
+                    <select id="gender">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other / Prefer not to say</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="calculateAge()">Calculate</button>
+
+            <div class="result" id="result">
+                Enter your birthdate and gender, then hit Calculate
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2025 Jesse · -What a headache this crap is-</p>
+    </footer>
+
+    <script>
+        function calculateAge() {
+            const birthInput = document.getElementById('birthdate').value;
+            if (!birthInput) {
+                document.getElementById('result').innerHTML = "Please enter your birthdate.";
+                return;
+            }
+
+            const birthdate = new Date(birthInput);
+            const today = new Date();
+
+            // Calculate exact age
+            let years = today.getFullYear() - birthdate.getFullYear();
+            let months = today.getMonth() - birthdate.getMonth();
+            let days = today.getDate() - birthdate.getDate();
+
+            if (days < 0) {
+                months--;
+                days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+            }
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            const totalDays = Math.floor((today - birthdate) / (1000 * 60 * 60 * 24));
+            const totalHours = totalDays * 24;
+
+            // US average life expectancy (2025 CDC estimates)
+            const lifeExpectancy = {
+                male: 76.4,
+                female: 81.2,
+                other: 78.8  // average of male/female
+            };
+
+            const gender = document.getElementById('gender').value;
+            const avgLife = lifeExpectancy[gender];
+
+            const ageInYears = years + months / 12 + days / 365;
+            const lifePercentage = (ageInYears / avgLife * 100).toFixed(1);
+
+            document.getElementById('result').innerHTML = `
+                <strong>You are:</strong><br>
+                ${years} years, ${months} months, ${days} days old<br><br>
+                <strong>Hours lived:</strong> ${totalHours.toLocaleString()}<br><br>
+                <strong>Average US life expectancy (${gender}):</strong> ${avgLife} years<br>
+                <strong>Life lived:</strong> ${lifePercentage}%
+            `;
+        }
+
+        // Auto-calculate if birthdate pre-filled
+        document.getElementById('birthdate').addEventListener('change', calculateAge);
+        document.getElementById('gender').addEventListener('change', calculateAge);
+    </script>
+</body>
+</html>
