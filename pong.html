@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pong</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=1100">
+    <link rel="stylesheet" href="css/style.css?v=1200">
     <style>
         body { margin:0; background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
         header nav { position:absolute; top:20px; left:20px; }
@@ -47,8 +47,8 @@
 
         // Responsive canvas
         function resizeCanvas() {
-            canvas.width = window.innerWidth * 0.9;
-            canvas.height = window.innerHeight * 0.6;
+            canvas.width = Math.min(window.innerWidth * 0.9, 800);
+            canvas.height = Math.min(window.innerHeight * 0.6, 500);
         }
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
@@ -110,7 +110,7 @@
             if (ball.x < 0) { aiScore++; aiScoreEl.textContent = aiScore; resetBall(); }
             if (ball.x > canvas.width) { playerScore++; playerScoreEl.textContent = playerScore; resetBall(); }
 
-            // AI movement (medium difficulty)
+            // AI movement
             if (ai.y + paddleHeight/2 < ball.y - 35) ai.y += 4;
             if (ai.y + paddleHeight/2 > ball.y + 35) ai.y -= 4;
 
@@ -125,33 +125,27 @@
         function resetBall() {
             ball.x = canvas.width/2;
             ball.y = canvas.height/2;
-            ball.dx = -ball.dx;
-            ball.dy = 5 * (Math.random() > 0.5 ? 1 : -1);
+            ball.dx = (Math.random() > 0.5 ? 5 : -5); // random horizontal direction
+            ball.dy = (Math.random() * 8 - 4); // random vertical direction
         }
 
-        // Mouse control (desktop)
-        canvas.addEventListener("mousemove", (e) => {
+        // Mouse & Touch control
+        function movePaddle(e) {
             const rect = canvas.getBoundingClientRect();
-            player.y = e.clientY - rect.top - paddleHeight / 2;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            player.y = y - paddleHeight / 2;
             player.y = Math.max(0, Math.min(player.y, canvas.height - paddleHeight));
-        });
+        }
+        canvas.addEventListener("mousemove", movePaddle);
+        canvas.addEventListener("touchmove", movePaddle);
 
-        // Touch control (phone)
-        canvas.addEventListener("touchmove", (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const rect = canvas.getBoundingClientRect();
-            player.y = touch.clientY - rect.top - paddleHeight / 2;
-            player.y = Math.max(0, Math.min(player.y, canvas.height - paddleHeight));
-        });
-
-        // Tap to restart after game over
+        // Click to restart
         canvas.addEventListener("click", () => {
             if (playerScore >= winningScore || aiScore >= winningScore) {
                 playerScore = aiScore = 0;
                 playerScoreEl.textContent = aiScoreEl.textContent = 0;
                 gameOverEl.style.display = "none";
-                resetBall();
+                resetBall(); // now properly randomizes direction
             }
         });
 
