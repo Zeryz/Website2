@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Golf Distance Calculator</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=800">
+    <link rel="stylesheet" href="css/style.css?v=900">
     <style>
         body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; }
         header nav { text-align:center; margin-bottom:2rem; }
@@ -43,26 +43,31 @@
                     <label>Swing Speed (mph)</label>
                     <input type="number" id="swingSpeed" value="100" min="60" max="140">
                 </div>
+
                 <div>
                     <label>Club</label>
                     <select id="clubPreset">
-                        <option value="Driver (10°)">Driver (10°)</option>
-                        <option value="3wood">3-Wood (15°)</option>
-                        <option value="hybrid">Hybrid (19°)</option>
-                        <option value="5iron">5-Iron (24°)</option>
-                        <option value="7iron">7-Iron (32°)</option>
-                        <option value="pw">PW (46°)</option>
+                        <option value="10">Driver (10°)</option>
+                        <option value="15">3-Wood (15°)</option>
+                        <option value="19">Hybrid (19°)</option>
+                        <option value="24">5-Iron (24°)</option>
+                        <option value="32">7-Iron (32°)</option>
+                        <option value="46">PW (46°)</option>
                         <option value="custom">Custom Loft →</option>
                     </select>
                 </div>
-                <div id="customLoftRow" style="display:none;">
+
+                <!-- CUSTOM LOFT FIELD — shows only when needed -->
+                <div id="customLoftContainer" style="display:none;">
                     <label>Custom Loft (°)</label>
-                    <input type="number" id="customLoft" value="10" min="5" max="60" step="0.5">
+                    <input type="number" id="customLoft" value="10" min="5" max="60" step="0.5" placeholder="e.g. 9.5">
                 </div>
+
                 <div>
-                    <label>Elevation (feet above sea level)</label>
+                    <label>Elevation (feet)</label>
                     <input type="number" id="elevation" value="0" min="0" max="12000" step="100">
                 </div>
+
                 <div>
                     <label>Temperature (°F)</label>
                     <input type="number" id="temp" value="70" min="-20" max="120">
@@ -72,7 +77,7 @@
             <button onclick="calculate()">Calculate Distance</button>
 
             <div class="result" id="result">
-                Enter your numbers and hit Calculate
+                Pick your club and hit Calculate
             </div>
         </div>
     </main>
@@ -82,52 +87,51 @@
     </footer>
 
     <script>
-        const customRow = document.getElementById('customLoftRow');
+        const customContainer = document.getElementById('customLoftContainer');
         document.getElementById('clubPreset').addEventListener('change', function() {
-            customRow.style.display = this.value === 'custom' ? 'block' : 'none';
+            customContainer.style.display = this.value === 'custom' ? 'block' : 'none';
         });
 
         function calculate() {
             const swing = parseFloat(document.getElementById('swingSpeed').value) || 100;
             const preset = document.getElementById('clubPreset').value;
-            let loft = preset === 'custom' 
-                ? parseFloat(document.getElementById('customLoft').value) || 10
-                : { driver:10, '3wood':15, hybrid:19, '5iron':24, '7iron':32, pw:46 }[preset];
+            const customLoftInput = document.getElementById('customLoft');
+            const loft = preset === 'custom' 
+                ? parseFloat(customLoftInput.value) || 10
+                : parseFloat(preset);
 
             const elevation = parseFloat(document.getElementById('elevation').value) || 0;
             const temp = parseFloat(document.getElementById('temp').value) || 70;
 
-            // Smash factor by loft (approximate real-world data)
-            const smash = loft <= 12 ? 1.48 : loft <= 1.45 - (loft-12)*0.008;
+            // Smash factor based on loft
+            const smash = loft <= 12 ? 1.48 : 1.45 - (loft-12)*0.008;
 
-            const ballSpeed = swing * smash;
+            const ballSpeed = Math.round(swing * smash);
 
-            // Launch angle ≈ loft × 0.85 + angle of attack (assume +3° for driver, less for irons)
+            // Launch angle estimate
             const aoa = loft <= 15 ? 4 : loft <= 25 ? 0 : -3;
             const launch = loft * 0.85 + aoa;
 
-            // Carry distance (very accurate formula used by TrackMan/FlightScope)
-            let carry = ballSpeed * ballSpeed * Math.sin(2 * launch * Math.PI/180) / 0.85) / 32.2 * 3; // yards
+            // Carry distance (TrackMan-style)
+            let carry = ballSpeed * ballSpeed * Math.sin(2 * launch * Math.PI/180) / 0.85 / 32.2 * 3;
 
-            // Elevation boost
+            // Elevation + temp
             carry *= (1 + elevation * 0.00116);
-
-            // Temperature boost
             carry += (temp - 70) * 0.12;
 
-            // Roll (more on firm fairways, less on soft)
             const roll = loft <= 15 ? 35 : loft <= 25 ? 20 : 10;
             const total = carry + roll;
 
             document.getElementById('result').innerHTML = `
-                <strong>Carry Distance:</strong> ${Math.round(carry)} yards<br>
-                <strong>Total Distance:</strong> ${Math.round(total)} yards<br><br>
-                Ball Speed: ${Math.round(ballSpeed)} mph • Launch: ${launch.toFixed(1)}° • Loft: ${loft}°
+                <strong>Carry:</strong> ${Math.round(carry)} yards<br>
+                <strong>Total:</strong> ${Math.round(total)} yards<br><br>
+                Ball Speed: ${ballSpeed} mph | Launch: ${launch.toFixed(1)}° | Loft: ${loft}°
             `;
         }
 
-        // Default calculation on load
+        // Auto-calculate on load and on any change
         calculate();
+        document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', calculate));
     </script>
 </body>
 </html>
