@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tetris</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=3000">
+    <link rel="stylesheet" href="css/style.css?v=4000">
     <style>
         body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; display:flex; flex-direction:column; align-items:center; }
         header nav { position:absolute; top:20px; left:20px; }
@@ -126,9 +126,7 @@
             for (let y = 0; y < m.length; ++y) {
                 for (let x = 0; x < m[y].length; ++x) {
                     if (m[y][x] !== 0 &&
-                        (board[y + o.y] === undefined ||
-                         board[y + o.y][x + o.x] === undefined ||
-                         board[y + o.y][x + o.x] !== 0)) {
+                        (board[y + o.y] && board[y + o.y][x + o.x]) !== 0) {
                         return true;
                     }
                 }
@@ -178,7 +176,7 @@
 
         function playerReset() {
             const pieces = 'IJLOSTZ';
-            const typeIndex = pieces.charCodeAt(Math.floor(Math.random() * pieces.length)) - 73;
+            const typeIndex = Math.floor(Math.random() * pieces.length);
             player.matrix = createPiece(typeIndex);
             player.pos.y = 0;
             player.pos.x = Math.floor(10 / 2) - Math.floor(player.matrix[0].length / 2);
@@ -186,7 +184,7 @@
                 board.forEach(row => row.fill(0));
                 player.score = 0;
                 updateScore();
-                alert("Game Over! Final Score: " + player.score);
+                alert("Game Over! Score: " + player.score);
             }
         }
 
@@ -224,9 +222,9 @@
             requestAnimationFrame(update);
         }
 
-        // Prevent arrow keys from scrolling
+        // Prevent scrolling with arrow keys
         window.addEventListener("keydown", e => {
-            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+            if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) {
                 e.preventDefault();
             }
             if (e.key === "ArrowLeft") playerMove(-1);
@@ -240,7 +238,7 @@
             }
         });
 
-        // Touch controls for mobile
+        // Touch controls
         let touchStartX = 0;
         canvas.addEventListener('touchstart', e => {
             touchStartX = e.touches[0].clientX;
