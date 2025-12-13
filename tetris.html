@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tetris</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=1000">
+    <link rel="stylesheet" href="css/style.css?v=2000">
     <style>
         body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; display:flex; flex-direction:column; align-items:center; }
         header nav { position:absolute; top:20px; left:20px; }
@@ -178,14 +178,15 @@
 
         function playerReset() {
             const pieces = 'IJLOSTZ';
-            player.matrix = createPiece(pieces.charCodeAt(Math.floor(Math.random() * pieces.length)) - 73);
+            const typeIndex = pieces.charCodeAt(Math.floor(Math.random() * pieces.length)) - 73;
+            player.matrix = createPiece(typeIndex);
             player.pos.y = 0;
             player.pos.x = Math.floor(10 / 2) - Math.floor(player.matrix[0].length / 2);
             if (collide(board, player)) {
                 board.forEach(row => row.fill(0));
                 player.score = 0;
                 updateScore();
-                alert("Game Over!");
+                alert("Game Over! Score: " + player.score);
             }
         }
 
@@ -223,15 +224,17 @@
             requestAnimationFrame(update);
         }
 
-        document.addEventListener('keydown', e => {
-            if (e.key === 'ArrowLeft') playerMove(-1);
-            if (e.key === 'ArrowRight') playerMove(1);
-            if (e.key === 'ArrowDown') playerDrop();
-            if (e.key === 'ArrowUp') playerRotate();
-            if (e.key === ' ') { // space for hard drop
-                while (!collide(board, player)) {
-                    player.pos.y++;
-                }
+        // Prevent arrow keys from scrolling the page
+        window.addEventListener("keydown", e => {
+            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+                e.preventDefault();
+            }
+            if (e.key === "ArrowLeft") playerMove(-1);
+            if (e.key === "ArrowRight") playerMove(1);
+            if (e.key === "ArrowDown") playerDrop();
+            if (e.key === "ArrowUp") playerRotate();
+            if (e.key === " ") {
+                while (!collide(board, player)) player.pos.y++;
                 player.pos.y--;
                 playerDrop();
             }
