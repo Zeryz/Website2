@@ -5,25 +5,98 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tetris</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=4000">
+    <link rel="stylesheet" href="css/style.css?v=6000">
     <style>
-        body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; display:flex; flex-direction:column; align-items:center; }
-        header nav { position:absolute; top:20px; left:20px; }
-        header a { color:#00f5ff; text-decoration:none; font-size:1.2rem; }
-        .hero { text-align:center; margin-bottom:3rem; }
-        .hero h1 { font-size:clamp(3rem,10vw,6rem); background:linear-gradient(90deg,#00f5ff,#80f8ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
-        .hero p { font-size:1.5rem; opacity:0.9; }
-        .photo { width:140px; height:140px; border-radius:50%; border:5px solid #00f5ff; box-shadow:0 0 40px #00f5ff60; }
-        .game-container { background:#111; padding:3rem; border-radius:20px; border:4px solid #00f5ff; box-shadow:0 0 50px #00f5ff60; max-width:400px; width:100%; }
-        canvas { background:#000; border:4px solid #00f5ff; box-shadow:0 0 40px #00f5ff60; display:block; margin:0 auto; }
-        .score { margin-top:1rem; text-align:center; font-size:1.8rem; color:#00f5ff; text-shadow:0 0 20px #00f5ff80; }
-        .controls { margin-top:1rem; text-align:center; font-size:1rem; opacity:0.8; }
-        footer { margin-top:auto; text-align:center; opacity:0.7; font-size:0.9rem; }
-        @media (max-width:600px) { canvas { width:95vw; height:auto; } .game-container { padding:2rem; } }
+        body {
+            margin: 0;
+            background: #000;
+            color: #fff;
+            font-family: system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        header nav {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+        header a {
+            color: #00f5ff;
+            text-decoration: none;
+            font-size: 1.2rem;
+        }
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .hero h1 {
+            font-size: clamp(3rem, 10vw, 6rem);
+            background: linear-gradient(90deg, #00f5ff, #80f8ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero p {
+            font-size: 1.5rem;
+            opacity: 0.9;
+        }
+        .photo {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 5px solid #00f5ff;
+            box-shadow: 0 0 40px #00f5ff60;
+            margin-top: 1rem;
+        }
+        .game-container {
+            background: #111;
+            padding: 3rem;
+            border-radius: 20px;
+            border: 4px solid #00f5ff;
+            box-shadow: 0 0 50px #00f5ff60;
+            max-width: 400px;
+            width: 100%;
+        }
+        canvas {
+            background: #000;
+            border: 4px solid #00f5ff;
+            box-shadow: 0 0 40px #00f5ff60;
+            display: block;
+            margin: 0 auto;
+        }
+        .score {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 1.8rem;
+            color: #00f5ff;
+            text-shadow: 0 0 20px #00f5ff80;
+        }
+        .controls {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        footer {
+            margin-top: auto;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 600px) {
+            canvas { width: 95vw; height: auto; }
+            .game-container { padding: 2rem; }
+        }
     </style>
 </head>
 <body>
-    <header><nav><a href="index.html">← Home</a></nav></header>
+    <header>
+        <nav><a href="index.html">← Home</a></nav>
+    </header>
 
     <main>
         <section class="hero">
@@ -184,7 +257,7 @@
                 board.forEach(row => row.fill(0));
                 player.score = 0;
                 updateScore();
-                alert("Game Over! Score: " + player.score);
+                alert("Game Over! Final Score: " + player.score);
             }
         }
 
