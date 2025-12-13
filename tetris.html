@@ -7,88 +7,23 @@
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/style.css?v=1000">
     <style>
-        body {
-            margin: 0;
-            background: #000;
-            color: #fff;
-            font-family: system-ui, -apple-system, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            box-sizing: border-box;
-        }
-        header nav {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-        }
-        header a {
-            color: #00f5ff;
-            text-decoration: none;
-            font-size: 1.2rem;
-        }
-        .hero {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .hero h1 {
-            font-size: clamp(3rem, 10vw, 6rem);
-            background: linear-gradient(90deg, #00f5ff, #80f8ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .hero p {
-            font-size: 1.5rem;
-            opacity: 0.9;
-        }
-        .photo {
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
-            border: 5px solid #00f5ff;
-            box-shadow: 0 0 40px #00f5ff60;
-            margin-top: 1rem;
-        }
-        .game-container {
-            background: #111;
-            padding: 2rem;
-            border-radius: 20px;
-            border: 4px solid #00f5ff;
-            box-shadow: 0 0 50px #00f5ff60;
-            max-width: 400px;
-            width: 100%;
-        }
-        canvas {
-            border: 4px solid #00f5ff;
-            box-shadow: 0 0 40px #00f5ff60;
-            image-rendering: pixelated;
-            background: #000;
-        }
-        .controls {
-            margin-top: 1rem;
-            text-align: center;
-            font-size: 1rem;
-            opacity: 0.8;
-        }
-        footer {
-            margin-top: 3rem;
-            font-size: 0.9rem;
-            opacity: 0.7;
-        }
-        @media (max-width: 600px) {
-            .game-container { padding: 1.5rem; }
-            canvas { width: 100%; height: auto; }
-        }
+        body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; display:flex; flex-direction:column; align-items:center; }
+        header nav { position:absolute; top:20px; left:20px; }
+        header a { color:#00f5ff; text-decoration:none; font-size:1.2rem; }
+        .hero { text-align:center; margin-bottom:3rem; }
+        .hero h1 { font-size:clamp(3rem,10vw,6rem); background:linear-gradient(90deg,#00f5ff,#80f8ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+        .hero p { font-size:1.5rem; opacity:0.9; }
+        .photo { width:140px; height:140px; border-radius:50%; border:5px solid #00f5ff; box-shadow:0 0 40px #00f5ff60; }
+        .game-container { background:#111; padding:3rem; border-radius:20px; border:4px solid #00f5ff; box-shadow:0 0 50px #00f5ff60; max-width:400px; width:100%; }
+        canvas { background:#000; border:4px solid #00f5ff; box-shadow:0 0 40px #00f5ff60; display:block; margin:0 auto; }
+        .score { margin-top:1rem; text-align:center; font-size:1.8rem; color:#00f5ff; text-shadow:0 0 20px #00f5ff80; }
+        .controls { margin-top:1rem; text-align:center; font-size:1rem; opacity:0.8; }
+        footer { margin-top:auto; text-align:center; opacity:0.7; font-size:0.9rem; }
+        @media (max-width:600px) { canvas { width:95vw; height:auto; } .game-container { padding:2rem; } }
     </style>
 </head>
 <body>
-    <header>
-        <nav><a href="index.html">← Home</a></nav>
-    </header>
+    <header><nav><a href="index.html">← Home</a></nav></header>
 
     <main>
         <section class="hero">
@@ -99,6 +34,7 @@
 
         <div class="game-container">
             <canvas id="tetris" width="240" height="480"></canvas>
+            <div class="score">Score: <span id="score">0</span></div>
             <div class="controls">
                 Desktop: ← → ↓ (move), ↑ (rotate), Space (drop)<br>
                 Mobile: Tap left/right to move, tap top to rotate, swipe down to drop
@@ -116,8 +52,9 @@
         ctx.scale(24, 24);
 
         const board = Array.from({length: 20}, () => Array(10).fill(0));
+        const scoreEl = document.getElementById('score');
 
-        const pieces = [
+        const PIECES = [
             [[1, 1, 1, 1]], // I
             [[1, 1], [1, 1]], // O
             [[0, 1, 0], [1, 1, 1]], // T
@@ -127,7 +64,7 @@
             [[0, 0, 1], [1, 1, 1]]  // L
         ];
 
-        const colors = [
+        const COLORS = [
             null,
             '#00f5ff', // I
             '#ffea00', // O
@@ -149,14 +86,14 @@
         let lastTime = 0;
 
         function createPiece(type) {
-            return pieces[type];
+            return PIECES[type];
         }
 
         function drawMatrix(matrix, offset) {
             matrix.forEach((row, y) => {
                 row.forEach((value, x) => {
                     if (value !== 0) {
-                        ctx.fillStyle = colors[value];
+                        ctx.fillStyle = COLORS[value];
                         ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
                         ctx.strokeStyle = '#000';
                         ctx.lineWidth = 0.05;
@@ -169,7 +106,6 @@
         function draw() {
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width / 24, canvas.height / 24);
-
             drawMatrix(board, {x: 0, y: 0});
             drawMatrix(player.matrix, player.pos);
         }
@@ -190,8 +126,8 @@
             for (let y = 0; y < m.length; ++y) {
                 for (let x = 0; x < m[y].length; ++x) {
                     if (m[y][x] !== 0 &&
-                        (board[y + o.y] === undefined || 
-                         board[y + o.y][x + o.x] === undefined || 
+                        (board[y + o.y] === undefined ||
+                         board[y + o.y][x + o.x] === undefined ||
                          board[y + o.y][x + o.x] !== 0)) {
                         return true;
                     }
@@ -213,9 +149,7 @@
 
         function playerMove(dir) {
             player.pos.x += dir;
-            if (collide(board, player)) {
-                player.pos.x -= dir;
-            }
+            if (collide(board, player)) player.pos.x -= dir;
         }
 
         function playerRotate() {
@@ -244,7 +178,7 @@
 
         function playerReset() {
             const pieces = 'IJLOSTZ';
-            player.matrix = createPiece(pieces[Math.floor(Math.random() * pieces.length)].charCodeAt(0) - 73);
+            player.matrix = createPiece(pieces.charCodeAt(Math.floor(Math.random() * pieces.length)) - 73);
             player.pos.y = 0;
             player.pos.x = Math.floor(10 / 2) - Math.floor(player.matrix[0].length / 2);
             if (collide(board, player)) {
@@ -267,13 +201,13 @@
                 y++;
             }
             if (lines > 0) {
-                player.score += [0, 40, 100, 300, 1200][lines] * player.level;
+                player.score += [0, 40, 100, 300, 1200][lines];
                 updateScore();
             }
         }
 
         function updateScore() {
-            document.getElementById('score').textContent = player.score;
+            scoreEl.textContent = player.score;
         }
 
         function update(time = 0) {
@@ -289,12 +223,18 @@
             requestAnimationFrame(update);
         }
 
-        // Controls
         document.addEventListener('keydown', e => {
             if (e.key === 'ArrowLeft') playerMove(-1);
             if (e.key === 'ArrowRight') playerMove(1);
             if (e.key === 'ArrowDown') playerDrop();
             if (e.key === 'ArrowUp') playerRotate();
+            if (e.key === ' ') { // space for hard drop
+                while (!collide(board, player)) {
+                    player.pos.y++;
+                }
+                player.pos.y--;
+                playerDrop();
+            }
         });
 
         // Touch controls for mobile
@@ -315,6 +255,8 @@
             if (e.changedTouches[0].clientY < canvas.getBoundingClientRect().top + 100) {
                 playerRotate();
             } else {
+                while (!collide(board, player)) player.pos.y++;
+                player.pos.y--;
                 playerDrop();
             }
         });
