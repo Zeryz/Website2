@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tetris</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=2000">
+    <link rel="stylesheet" href="css/style.css?v=3000">
     <style>
         body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; display:flex; flex-direction:column; align-items:center; }
         header nav { position:absolute; top:20px; left:20px; }
@@ -186,7 +186,7 @@
                 board.forEach(row => row.fill(0));
                 player.score = 0;
                 updateScore();
-                alert("Game Over! Score: " + player.score);
+                alert("Game Over! Final Score: " + player.score);
             }
         }
 
@@ -224,7 +224,7 @@
             requestAnimationFrame(update);
         }
 
-        // Prevent arrow keys from scrolling the page
+        // Prevent arrow keys from scrolling
         window.addEventListener("keydown", e => {
             if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
                 e.preventDefault();
