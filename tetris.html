@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tetris</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=4000">
+    <link rel="stylesheet" href="css/style.css?v=5000">
     <style>
         body {
             margin: 0;
@@ -80,6 +80,7 @@
             text-align: center;
             font-size: 1rem;
             opacity: 0.8;
+            display: none;
         }
         .start-button {
             padding: 1.2rem 2.4rem;
@@ -93,9 +94,27 @@
             margin: 2rem 0;
         }
         .start-button:hover { background:#80f8ff; }
-        .game-over { position:absolute; font-size:4rem; color:#00f5ff; text-shadow:0 0 30px #00f5ff; display:none; text-align:center; width:100%; top:50%; transform:translateY(-50%); }
-        footer { margin-top:auto; text-align:center; opacity:0.7; font-size:0.9rem; }
-        @media (max-width:600px) { canvas { width:95vw; height:auto; } .game-container { padding:2rem; } }
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            color: #00f5ff;
+            text-shadow: 0 0 30px #00f5ff;
+            text-align: center;
+            display: none;
+        }
+        footer {
+            margin-top: auto;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        @media (max-width:600px) {
+            canvas { width:95vw; height:auto; }
+            .game-container { padding:2rem; }
+        }
     </style>
 </head>
 <body>
@@ -117,8 +136,9 @@
                 Desktop: ← → ↓ (move), ↑ (rotate), Space (drop)<br>
                 Mobile: Tap left/right to move, tap top to rotate, swipe down to drop
             </div>
+
             <div class="game-over" id="gameOver">
-                GAME OVER!<br>
+                GAME OVER!<br><br>
                 <button class="start-button" onclick="startGame()">Play Again</button>
             </div>
         </div>
@@ -135,6 +155,8 @@
 
         const board = Array.from({length: 20}, () => Array(10).fill(0));
         const scoreEl = document.getElementById('score');
+        const startBtn = document.getElementById('startBtn');
+        const gameOverEl = document.getElementById('gameOver');
 
         const PIECES = [
             [[1, 1, 1, 1]], // I
@@ -310,6 +332,10 @@
             startBtn.style.display = 'none';
             canvas.style.display = 'block';
             document.querySelector('.controls').style.display = 'block';
+            gameOverEl.style.display = 'none';
+            player.score = 0;
+            updateScore();
+            board.forEach(row => row.fill(0));
             playerReset();
             update();
         }
