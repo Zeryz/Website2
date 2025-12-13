@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tetris</title>
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=10000">
+    <link rel="stylesheet" href="css/style.css?v=12000">
     <style>
         body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; display:flex; flex-direction:column; align-items:center; }
         header nav { position:absolute; top:20px; left:20px; }
@@ -163,7 +163,6 @@
             if (collide(board, player)) player.pos.x -= dir;
         }
 
-        // FIXED ROTATION — proper clockwise, no piece change
         function playerRotate() {
             const pos = player.pos.x;
             let offset = 1;
@@ -172,7 +171,7 @@
                 player.pos.x += offset;
                 offset = -(offset + (offset > 0 ? 1 : -1));
                 if (offset > player.matrix[0].length) {
-                    rotate(player.matrix); // undo if can't fit
+                    rotate(player.matrix);
                     player.pos.x = pos;
                     return;
                 }
@@ -180,13 +179,11 @@
         }
 
         function rotate(matrix) {
-            // Transpose + reverse each row = clockwise
-            for (let y = 0; y < matrix.length; ++y) {
-                for (let x = 0; x < y; ++x) {
-                    [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
-                }
-            }
-            matrix.forEach(row => row.reverse());
+            // Correct clockwise rotation
+            const rotated = matrix[0].map((val, index) => 
+                matrix.map(row => row[index]).reverse()
+            );
+            player.matrix = rotated;
         }
 
         function playerReset() {
