@@ -9,12 +9,13 @@
       gtag('js', new Date());
       gtag('config', 'G-Z5XV2REGBG');
     </script>
+
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jesse</title>
     <meta name="description" content="Jesse's corner of the internet">
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=700">
+    <link rel="stylesheet" href="css/style.css?v=800">
     <style>
         body { margin:0; background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; display:grid; grid-template-rows:auto 1fr auto; }
         .header-image { width:100%; height:45vh; object-fit:contain; object-position:center; border-bottom:4px solid #00f5ff; }
@@ -31,11 +32,13 @@
         .stock-item:hover { background:#00f5ff10; }
         .stock-symbol { font-weight:bold; font-size:1.1rem; }
         .stock-pct { color:#00f5ff; text-shadow:0 0 10px #00f5ff; font-weight:bold; }
-        .main-content { padding:4rem 3rem; display:flex; align-items:flex-start; justify-content:center; text-align:center; } /* ← changed to flex-start = higher up */
-        .main-text { max-width:900px; margin-top:6vh; } /* ← extra top margin for even higher placement */
+        .main-content { padding:4rem 3rem; display:flex; align-items:flex-start; justify-content:center; text-align:center; }
+        .main-text { max-width:900px; margin-top:6vh; }
         .main-text h1 { font-size:clamp(3rem,10vw,7rem); margin-bottom:2rem; background:linear-gradient(90deg,#00f5ff,#80f8ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
         .main-text p { font-size:clamp(1.3rem,4vw,1.8rem); opacity:0.9; max-width:800px; margin:1.5rem auto; line-height:1.7; }
         .visitor-counter { margin-top:3rem; font-size:1.7rem; color:#00f5ff; text-shadow:0 0 25px #00f5ff80; }
+        .statcounter-link { font-size:1rem; opacity:0.7; margin-top:1rem; }
+        .statcounter-link a { color:#80f8ff; text-decoration:underline; }
         footer { grid-column:1/-1; text-align:center; padding:2rem; font-size:0.9rem; opacity:0.7; background:#000; }
 
         @media (max-width:900px) {
@@ -44,7 +47,7 @@
             .photo { width:140px; height:140px; }
             .main-content { padding:3rem 2rem; }
             .header-image { height:35vh; }
-            .main-text { margin-top:4vh; } /* slightly less on mobile */
+            .main-text { margin-top:4vh; }
         }
         @media (max-width:500px) {
             .header-image { height:30vh; }
@@ -77,6 +80,7 @@
             </div>
             <div class="portfolio">
                 <h3>Investment Portfolio</h3>
+                <!-- Your 32 stocks here -->
                 <div class="stock-item"><span class="stock-symbol">TSLA</span><span class="stock-pct">21.8%</span></div>
                 <div class="stock-item"><span class="stock-symbol">NVDA</span><span class="stock-pct">9.9%</span></div>
                 <div class="stock-item"><span class="stock-symbol">BTC</span><span class="stock-pct">4.9%</span></div>
@@ -90,7 +94,7 @@
                 <div class="stock-item"><span class="stock-symbol">IBM</span><span class="stock-pct">2.5%</span></div>
                 <div class="stock-item"><span class="stock-symbol">CVX</span><span class="stock-pct">2.5%</span></div>
                 <div class="stock-item"><span class="stock-symbol">OXY</span><span class="stock-pct">2.5%</span></div>
-                <div class="stock-item"><span class="stock-symbol">PPLT</span><  <span class="stock-pct">2.5%</span></div>
+                <div class="stock-item"><span class="stock-symbol">PPLT</span><span class="stock-pct">2.5%</span></div>
                 <div class="stock-item"><span class="stock-symbol">PLTM</span><span class="stock-pct">2.5%</span></div>
                 <div class="stock-item"><span class="stock-symbol">SLV</span><span class="stock-pct">2.5%</span></div>
                 <div class="stock-item"><span class="stock-symbol">SIVR</span><span class="stock-pct">2.5%</span></div>
@@ -119,8 +123,20 @@
                 <p>So far we have my prime number finder, a little game I made, the github for open sourcing the code (including this website) and my email.</p>
                 <p>Next is likely getting a google ad banner, a visit counter, and maybe a way to let peeps give me money.</p>
 
+                <!-- STATCOUNTER — real visitors, matches your style -->
                 <div class="visitor-counter">
-                    Total visitors: <strong id="gaCounter">loading...</strong>
+                    Total visitors: 
+                    <script type="text/javascript">
+                    var sc_project=13193132; 
+                    var sc_invisible=0; 
+                    var sc_security="4e75d277"; 
+                    </script>
+                    <script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
+                    <noscript><div class="statcounter"><img class="statcounter" src="https://c.statcounter.com/13193132/0/4e75d277/0/" alt="Statcounter"></div></noscript>
+                </div>
+
+                <div class="statcounter-link">
+                    <a href="https://statcounter.com/p13193132/?guest=1" target="_blank">View My Stats</a>
                 </div>
             </div>
         </div>
@@ -129,12 +145,5 @@
     <footer>
         <p>© 2025 Jesse · -What a headache this crap is-</p>
     </footer>
-
-    <script>
-        gtag('get', 'G-Z5XV2REGBG', 'totalUsers', (total) => {
-            document.getElementById('gaCounter').textContent = 
-                Number(total || 1).toLocaleString();
-        });
-    </script>
 </body>
 </html>
