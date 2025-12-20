@@ -14,7 +14,7 @@
     <title>Jesse</title>
     <meta name="description" content="Jesse's corner of the internet">
     <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/style.css?v=1200">
+    <link rel="stylesheet" href="css/style.css?v=1400">
     <style>
         body { margin:0; background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; display:grid; grid-template-rows:auto 1fr auto; }
         .header-image { width:100%; height:45vh; object-fit:contain; object-position:center; border-bottom:4px solid #00f5ff; }
@@ -35,7 +35,8 @@
         .main-text { max-width:900px; margin-top:6vh; }
         .main-text h1 { font-size:clamp(3rem,10vw,7rem); margin-bottom:2rem; background:linear-gradient(90deg,#00f5ff,#80f8ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
         .main-text p { font-size:clamp(1.3rem,4vw,1.8rem); opacity:0.9; max-width:800px; margin:1.5rem auto; line-height:1.7; }
-        .visitor-counter { margin-top:3rem; font-size:1.7rem; color:#00f5ff; text-shadow:0 0 25px #00f5ff80; }
+        .visitor-counter { margin-top:3rem; font-size:1.7rem; color:#00f5ff; text-shadow:0 0 25px #00f5ff80; display:flex; align-items:center; justify-content:center; gap:1rem; flex-wrap:wrap; }
+        .visitor-counter img { vertical-align:middle; }
         footer { grid-column:1/-1; text-align:center; padding:2rem; font-size:0.9rem; opacity:0.7; background:#000; }
         @media (max-width:900px) {
             .content-wrapper { grid-template-columns:1fr; }
@@ -118,29 +119,21 @@
                 <p>So far we have my prime number finder, a little game I made, the github for open sourcing the code (including this website) and my email.</p>
                 <p>Next is likely getting a google ad banner, a visit counter, and maybe a way to let peeps give me money.</p>
 
-                <!-- COUNTERAPI.DEV — real visitors, text number -->
+                <!-- STATCOUNTER — visible image counter -->
                 <div class="visitor-counter">
-                    Total visitors: <strong id="counter">loading...</strong>
+                    Total visitors:
+                    <script type="text/javascript">
+                    var sc_project=13193132; 
+                    var sc_invisible=0; 
+                    var sc_security="4e75d277"; 
+                    </script>
+                    <script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
+                    <noscript><div class="statcounter"><img class="statcounter" src="https://c.statcounter.com/13193132/0/4e75d277/0/" alt="Statcounter"></div></noscript>
                 </div>
 
-                <script>
-                    const namespace = "jesseloput.com";
-                    const key = "visits";
-
-                    // Increment the count
-                    fetch(`https://api.counterapi.dev/v1/\( {namespace}/ \){key}/up`)
-                        .catch(() => {});
-
-                    // Get and display the count
-                    fetch(`https://api.counterapi.dev/v1/\( {namespace}/ \){key}`)
-                        .then(r => r.json())
-                        .then(data => {
-                            document.getElementById('counter').textContent = data.count.toLocaleString();
-                        })
-                        .catch(() => {
-                            document.getElementById('counter').textContent = "many";
-                        });
-                </script>
+                <div style="margin-top:1rem; font-size:1rem; opacity:0.7;">
+                    <a href="https://statcounter.com/p13193132/?guest=1" target="_blank" style="color:#80f8ff;">View detailed stats</a>
+                </div>
             </div>
         </div>
     </div>
