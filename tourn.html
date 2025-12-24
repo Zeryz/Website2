@@ -1,92 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pool Tournament Bracket</title>
-    <!-- brackets-viewer CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/brackets-viewer@latest/dist/brackets-viewer.min.css">
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/style.css?v=100">
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
-        .container { max-width: 1200px; margin: auto; }
-        .brackets-viewer { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        input, button { margin: 10px 0; padding: 8px; }
+        body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; padding:2rem; }
+        header nav { text-align:center; margin-bottom:2rem; }
+        header a { color:#00f5ff; text-decoration:none; font-size:1.2rem; }
+        .hero { text-align:center; margin-bottom:3rem; }
+        .hero h1 { font-size:clamp(3rem,10vw,6rem); background:linear-gradient(90deg,#00f5ff,#80f8ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+        .hero p { font-size:1.5rem; opacity:0.9; }
+        .photo { width:140px; height:140px; border-radius:50%; border:5px solid #00f5ff; box-shadow:0 0 40px #00f5ff60; }
+        .calc-container { background:#111; padding:3rem; border-radius:20px; border:4px solid #00f5ff; box-shadow:0 0 50px #00f5ff60; max-width:800px; margin:0 auto; }
+        .inputs { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1.5rem; margin-bottom:2rem; }
+        label { display:block; margin-bottom:0.5rem; color:#00f5ff; font-weight:bold; }
+        input, select { width:100%; padding:1rem; background:#000; border:2px solid #00f5ff; border-radius:8px; color:#fff; font-size:1rem; }
+        button { width:100%; padding:1.2rem; background:#00f5ff; color:#000; border:none; border-radius:12px; font-size:1.4rem; font-weight:bold; cursor:pointer; margin-top:1rem; }
+        button:hover { background:#80f8ff; }
+        .result { margin-top:2rem; padding:1.5rem; background:#000; border-radius:12px; border:1px solid #00f5ff40; font-size:1.4rem; line-height:1.8; white-space:pre-wrap; }
+        footer { text-align:center; margin-top:4rem; opacity:0.7; font-size:0.9rem; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Pool Tournament Manager</h1>
-        
-        <h2>Create Tournament</h2>
-        <input type="text" id="tourneyName" placeholder="Tournament Name">
-        <select id="type">
-            <option value="single_elimination">Single Elimination</option>
-            <option value="double_elimination">Double Elimination</option>
-        </select>
-        <button onclick="createTournament()">Create & Add Players</button>
-        
-        <div id="playerInput" style="display:none;">
-            <h3>Add Players (one per line)</h3>
-            <textarea id="playersList" rows="10" cols="30"></textarea><br>
-            <button onclick="startBracket()">Generate Bracket</button>
-        </div>
-        
-        <div id="bracket" class="brackets-viewer" style="display:none;"></div>
-    </div>
+    <header>
+        <nav><a href="index.html">← Home</a></nav>
+    </header>
 
-    <!-- brackets-manager & viewer JS -->
-    <script src="https://cdn.jsdelivr.net/npm/brackets-manager@latest/dist/brackets-manager.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/brackets-viewer@latest/dist/brackets-viewer.min.js"></script>
+    <main>
+        <section class="hero">
+            <h1>Pool Tournament Bracket</h1>
+            <p>Single or Double Elimination — fair byes, random seeding</p>
+            <img src="images/photo.jpg" alt="Jesse" class="photo">
+        </section>
+
+        <div class="calc-container">
+            <div class="inputs">
+                <div>
+                    <label>Number of Players</label>
+                    <input type="number" id="numPlayers" value="8" min="2" max="64">
+                </div>
+                <div>
+                    <label>Tournament Type</label>
+                    <select id="tournamentType">
+                        <option value="single">Single Elimination</option>
+                        <option value="double">Double Elimination</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="generateBracket()">Generate Bracket</button>
+
+            <div class="result" id="result">
+                Enter number of players and click Generate Bracket
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2025 Jesse · -What a headache this crap is-</p>
+    </footer>
 
     <script>
-        const { BracketsManager, JsonDatabase } = bracketsManager;
-        const storage = new JsonDatabase();
-        const manager = new BracketsManager(storage);
+        function generateBracket() {
+            const numPlayers = parseInt(document.getElementById('numPlayers').value);
+            const type = document.getElementById('tournamentType').value;
 
-        let currentStageId;
-
-        function createTournament() {
-            const name = document.getElementById('tourneyName').value || 'My Pool Tourney';
-            const type = document.getElementById('type').value;
-            document.getElementById('playerInput').style.display = 'block';
-            window.tourneyType = type;
-        }
-
-        async function startBracket() {
-            const players = document.getElementById('playersList').value.split('\n').filter(p => p.trim());
-            if (players.length < 2 || players.length > 128) {
-                alert('Need 2-128 players');
+            if (isNaN(numPlayers) || numPlayers < 2) {
+                document.getElementById('result').innerHTML = "Please enter at least 2 players.";
                 return;
             }
 
-            // Create stage (bracket)
-            await manager.create.stage({
-                tournamentId: 0,
-                name: 'Main Stage',
-                type: window.tourneyType,
-                seeding: players,
-                settings: { matchesChildCount: 0 } // Best-of-1 by default
-            });
+            // Generate player list
+            let players = Array.from({length: numPlayers}, (_, i) => `Player ${i + 1}`);
+            shuffle(players);
 
-            const data = await manager.get.stageData(0);
-            currentStageId = data.stage[0].id;
+            let html = `<strong>${type === 'single' ? 'Single' : 'Double'} Elimination Bracket (${numPlayers} players)</strong><br><br>`;
 
-            // Render bracket
-            window.bracketsViewer.render({
-                stages: data.stage,
-                matches: data.match,
-                matchGames: data.match_game,
-                participants: data.participant,
-            }, {
-                selector: '.brackets-viewer',
-                // Custom options here
-            });
+            if (type === 'single') {
+                html += generateSingleBracket(players);
+            } else {
+                html += generateDoubleBracket(players);
+            }
 
-            document.getElementById('bracket').style.display = 'block';
-            document.getElementById('playerInput').style.display = 'none';
+            document.getElementById('result').innerHTML = html;
+        }
 
-            // Example: Update a match (you'd build a UI for this)
-            // await manager.update.match({ id: 0, opponent1: { result: 'win' } });
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function nextPowerOf2(n) {
+            return Math.pow(2, Math.ceil(Math.log2(n)));
+        }
+
+        function generateSingleBracket(players) {
+            let bracketSize = nextPowerOf2(players.length);
+            let byes = bracketSize - players.length;
+
+            // Distribute byes fairly
+            let bracket = [...players];
+            for (let i = 0; i < byes; i++) {
+                bracket.push('BYE');
+            }
+            shuffle(bracket); // random seeding
+
+            let html = '<strong>Round 1</strong><br>';
+            let round = 1;
+            let matches = bracket.length / 2;
+
+            while (matches >= 1) {
+                for (let i = 0; i < matches; i++) {
+                    const p1 = bracket[i * 2] || 'BYE';
+                    const p2 = bracket[i * 2 + 1] || 'BYE';
+                    html += `${p1} vs ${p2}<br>`;
+                }
+                html += '<br>';
+                if (matches === 1) break;
+                html += `<strong>Round ${++round}</strong><br>`;
+                matches /= 2;
+            }
+
+            html += '<strong>Champion: Winner of final match</strong>';
+            return html;
+        }
+
+        function generateDoubleBracket(players) {
+            let html = '<strong>Winners Bracket</strong><br>';
+            html += generateSingleBracket(players);
+
+            html += '<br><strong>Losers Bracket</strong><br>';
+            html += 'Losers from Winners Bracket drop here.<br>';
+            html += 'Losers bracket winner challenges Winners bracket champion.<br>';
+            html += 'If Winners champion loses, a final match decides the winner.';
+
+            return html;
         }
     </script>
 </body>
