@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pool Night Pairings</title>
+    <title>Pool Tournament Manager</title>
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/style.css?v=100">
     <style>
@@ -21,6 +21,8 @@
         button { width:100%; padding:1.2rem; background:#00f5ff; color:#000; border:none; border-radius:12px; font-size:1.4rem; font-weight:bold; cursor:pointer; margin-top:1rem; }
         button:hover { background:#80f8ff; }
         .result { margin-top:2rem; padding:1.5rem; background:#000; border-radius:12px; border:1px solid #00f5ff40; font-size:1.6rem; line-height:2; text-align:center; }
+        .round-title { font-size:1.8rem; margin-bottom:1rem; }
+        .pairing { margin:0.5rem 0; }
         footer { text-align:center; margin-top:4rem; opacity:0.7; font-size:0.9rem; }
     </style>
 </head>
@@ -31,8 +33,8 @@
 
     <main>
         <section class="hero">
-            <h1>Pool Night Pairings</h1>
-            <p>Random matches — no repeats, fair byes</p>
+            <h1>Pool Tournament Manager</h1>
+            <p>Random pairings — no repeats, fair byes</p>
             <img src="images/photo.jpg" alt="Jesse" class="photo">
         </section>
 
@@ -44,8 +46,8 @@
                 </div>
             </div>
 
-            <button onclick="generateRound()">Generate Next Round</button>
-            <button onclick="resetHistory()" style="margin-top:1rem; background:#333;">Reset History (New Night)</button>
+            <button onclick="generateNextRound()">Generate Next Round</button>
+            <button onclick="resetTournament()" style="margin-top:1rem; background:#333;">Reset Tournament</button>
 
             <div class="result" id="result">
                 Enter player names and click Generate Next Round
@@ -58,17 +60,18 @@
     </footer>
 
     <script>
-        let history = []; // all past match pairs
-        let byeHistory = {}; // player: bye count
+        let players = [];
+        let history = []; // past pairings [ "Jesse-Alex", "Sam-Taylor", ... ]
+        let byeCount = {}; // player: bye count
 
-        function generateRound() {
+        function generateNextRound() {
             const text = document.getElementById('players').value.trim();
             if (!text) {
                 document.getElementById('result').innerHTML = "Enter player names first.";
                 return;
             }
 
-            let players = text.split('\n').map(p => p.trim()).filter(p => p);
+            players = text.split('\n').map(p => p.trim()).filter(p => p);
             if (players.length < 2) {
                 document.getElementById('result').innerHTML = "Need at least 2 players.";
                 return;
@@ -77,33 +80,31 @@
             let pairings = [];
             let used = new Set();
             let shuffled = [...players];
-            shuffle(shuffled);
-
-            // Try to pair without repeats or multiple byes
             let attempts = 0;
-            while (attempts < 100) { // prevent infinite loop
+
+            while (attempts < 200) {
                 pairings = [];
                 used = new Set();
-                let current = [...shuffled];
-                shuffle(current);
+                shuffled = [...players];
+                shuffle(shuffled);
 
                 let valid = true;
-                for (let i = 0; i < current.length; i += 2) {
-                    if (i + 1 >= current.length) {
+                for (let i = 0; i < shuffled.length; i += 2) {
+                    if (i + 1 >= shuffled.length) {
                         // bye
-                        const p = current[i];
-                        if ((byeHistory[p] || 0) >= 1) {
+                        const p = shuffled[i];
+                        if ((byeCount[p] || 0) >= 1) {
                             valid = false;
                             break;
                         }
                         pairings.push(`${p} has a bye`);
                         used.add(p);
-                        byeHistory[p] = (byeHistory[p] || 0) + 1;
+                        byeCount[p] = (byeCount[p] || 0) + 1;
                         break;
                     }
 
-                    let p1 = current[i];
-                    let p2 = current[i + 1];
+                    let p1 = shuffled[i];
+                    let p2 = shuffled[i + 1];
                     let pairKey = [p1, p2].sort().join('-');
 
                     if (history.includes(pairKey)) {
@@ -121,25 +122,16 @@
                 attempts++;
             }
 
-            if (attempts >= 100) {
-                document.getElementById('result').innerHTML = "Couldn't find valid pairings without repeats — try Reset History.";
+            if (attempts >= 200) {
+                document.getElementById('result').innerHTML = "Couldn't find valid pairings without repeats — try Reset Tournament.";
                 return;
             }
 
-            // Add any missed byes (shouldn't happen)
-            players.forEach(p => {
-                if (!used.has(p)) {
-                    if ((byeHistory[p] || 0) < 1) {
-                        pairings.push(`${p} has a bye`);
-                        byeHistory[p] = (byeHistory[p] || 0) + 1;
-                    }
-                }
-            });
+            const roundNum = Math.ceil(history.length / (players.length / 2));
+            let html = `<div class="round-title">Round ${roundNum}</div>`;
+            pairings.forEach(p => html += `<div class="pairing">${p}</div>`);
 
-            const roundNum = Math.floor(history.length / Math.floor(players.length / 2)) + 1;
-            document.getElementById('result').innerHTML = 
-                `<strong>Round ${roundNum}</strong><br><br>` +
-                pairings.join('<br>');
+            document.getElementById('result').innerHTML = html;
         }
 
         function shuffle(array) {
@@ -149,10 +141,10 @@
             }
         }
 
-        function resetHistory() {
+        function resetTournament() {
             history = [];
-            byeHistory = {};
-            document.getElementById('result').innerHTML = "History reset — ready for a new night!";
+            byeCount = {};
+            document.getElementById('result').innerHTML = "Tournament reset — ready for new pairings!";
         }
     </script>
 </body>
