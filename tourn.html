@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pool Tournament Manager</title>
+    <title>Pool Night Pairings</title>
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/style.css?v=100">
     <style>
@@ -17,10 +17,10 @@
         .calc-container { background:#111; padding:3rem; border-radius:20px; border:4px solid #00f5ff; box-shadow:0 0 50px #00f5ff60; max-width:800px; margin:0 auto; }
         .inputs { display:grid; gap:1.5rem; margin-bottom:2rem; }
         label { display:block; margin-bottom:0.5rem; color:#00f5ff; font-weight:bold; }
-        textarea, select { width:100%; padding:1rem; background:#000; border:2px solid #00f5ff; border-radius:8px; color:#fff; font-size:1rem; height:200px; }
+        textarea { width:100%; padding:1rem; background:#000; border:2px solid #00f5ff; border-radius:8px; color:#fff; font-size:1rem; height:200px; }
         button { width:100%; padding:1.2rem; background:#00f5ff; color:#000; border:none; border-radius:12px; font-size:1.4rem; font-weight:bold; cursor:pointer; margin-top:1rem; }
         button:hover { background:#80f8ff; }
-        .result { margin-top:2rem; padding:1.5rem; background:#000; border-radius:12px; border:1px solid #00f5ff40; font-size:1.4rem; line-height:1.8; white-space:pre-wrap; }
+        .result { margin-top:2rem; padding:1.5rem; background:#000; border-radius:12px; border:1px solid #00f5ff40; font-size:1.6rem; line-height:2; }
         footer { text-align:center; margin-top:4rem; opacity:0.7; font-size:0.9rem; }
     </style>
 </head>
@@ -31,8 +31,8 @@
 
     <main>
         <section class="hero">
-            <h1>Pool Tournament Manager</h1>
-            <p>Enter player names (one per line), choose type, generate bracket</p>
+            <h1>Pool Night Pairings</h1>
+            <p>Random matches — no repeats</p>
             <img src="images/photo.jpg" alt="Jesse" class="photo">
         </section>
 
@@ -40,21 +40,15 @@
             <div class="inputs">
                 <div>
                     <label>Player Names (one per line)</label>
-                    <textarea id="players" placeholder="Player 1\nPlayer 2\nPlayer 3\n..."></textarea>
-                </div>
-                <div>
-                    <label>Tournament Type</label>
-                    <select id="type">
-                        <option value="single">Single Elimination</option>
-                        <option value="double">Double Elimination</option>
-                    </select>
+                    <textarea id="players" placeholder="Jesse\nAlex\nSam\nTaylor\nChris\nMorgan"></textarea>
                 </div>
             </div>
 
-            <button onclick="generateBracket()">Generate Bracket</button>
+            <button onclick="generateRound()">Generate Next Round</button>
+            <button onclick="resetHistory()" style="margin-top:1rem; background:#333;">Reset History (New Night)</button>
 
             <div class="result" id="result">
-                Enter player names and click Generate Bracket
+                Enter player names and click Generate Next Round
             </div>
         </div>
     </main>
@@ -64,10 +58,12 @@
     </footer>
 
     <script>
-        function generateBracket() {
+        let history = []; // stores all past match pairs to avoid repeats
+
+        function generateRound() {
             const text = document.getElementById('players').value.trim();
             if (!text) {
-                document.getElementById('result').innerHTML = "Enter at least 2 player names.";
+                document.getElementById('result').innerHTML = "Enter player names first.";
                 return;
             }
 
@@ -77,18 +73,45 @@
                 return;
             }
 
-            shuffle(players);
+            // Shuffle and pair
+            let shuffled = [...players];
+            shuffle(shuffled);
 
-            const type = document.getElementById('type').value;
-            let html = `<strong>${type === 'single' ? 'Single' : 'Double'} Elimination Tournament (${players.length} players)</strong><br><br>`;
+            let pairings = [];
+            let used = new Set();
 
-            if (type === 'single') {
-                html += generateSingle(players);
-            } else {
-                html += generateDouble(players);
+            for (let i = 0; i < shuffled.length; i += 2) {
+                if (i + 1 >= shuffled.length) {
+                    pairings.push(`${shuffled[i]} has a bye`);
+                    break;
+                }
+
+                let p1 = shuffled[i];
+                let p2 = shuffled[i + 1];
+                let pair = [p1, p2].sort().join('-');
+
+                // Avoid repeats
+                if (history.includes(pair)) {
+                    // reshuffle if repeat found
+                    i -= 2;
+                    shuffle(shuffled);
+                    continue;
+                }
+
+                pairings.push(`${p1} vs ${p2}`);
+                history.push(pair);
+                used.add(p1);
+                used.add(p2);
             }
 
-            document.getElementById('result').innerHTML = html;
+            // Add byes if odd number
+            players.forEach(p => {
+                if (!used.has(p)) pairings.push(`${p} has a bye`);
+            });
+
+            document.getElementById('result').innerHTML = 
+                `<strong>Round ${Math.floor(history.length / (players.length / 2)) + 1}</strong><br><br>` +
+                pairings.join('<br>');
         }
 
         function shuffle(array) {
@@ -98,49 +121,9 @@
             }
         }
 
-        function nextPowerOf2(n) {
-            return Math.pow(2, Math.ceil(Math.log2(n)));
-        }
-
-        function generateSingle(players) {
-            let size = nextPowerOf2(players.length);
-            let byes = size - players.length;
-            let bracket = [...players];
-            for (let i = 0; i < byes; i++) bracket.push('BYE');
-            shuffle(bracket);
-
-            let html = '<strong>Winners Bracket - Round 1</strong><br>';
-            for (let i = 0; i < bracket.length; i += 2) {
-                const p1 = bracket[i];
-                const p2 = bracket[i + 1] || 'BYE';
-                html += `${p1} vs ${p2}<br>`;
-            }
-
-            let round = 2;
-            let numMatches = bracket.length / 4;
-            while (numMatches >= 1) {
-                html += `<br><strong>Round ${round}</strong><br>`;
-                for (let i = 0; i < numMatches; i++) {
-                    html += `Winner Match ${i*2 + 1} vs Winner Match ${i*2 + 2}<br>`;
-                }
-                numMatches /= 2;
-                round++;
-            }
-
-            html += '<br><strong>Champion: Winner of final</strong>';
-            return html;
-        }
-
-        function generateDouble(players) {
-            let html = '<strong>Winners Bracket</strong><br>';
-            html += generateSingle(players);
-
-            html += '<br><strong>Losers Bracket</strong><br>';
-            html += 'Losers from Winners Round 1 play each other.<br>';
-            html += 'Winners advance, eventually challenging Winners bracket finalist.<br>';
-            html += 'Grand Final: Winners finalist vs Losers finalist (Winners needs 1 win, Losers needs 2).';
-
-            return html;
+        function resetHistory() {
+            history = [];
+            document.getElementById('result').innerHTML = "History reset — ready for new night!";
         }
     </script>
 </body>
