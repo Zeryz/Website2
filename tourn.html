@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pool Tournament Bracket</title>
+    <!-- brackets-viewer CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/brackets-viewer@latest/dist/brackets-viewer.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 1200px; margin: auto; }
+        .brackets-viewer { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input, button { margin: 10px 0; padding: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pool Tournament Manager</h1>
+        
+        <h2>Create Tournament</h2>
+        <input type="text" id="tourneyName" placeholder="Tournament Name">
+        <select id="type">
+            <option value="single_elimination">Single Elimination</option>
+            <option value="double_elimination">Double Elimination</option>
+        </select>
+        <button onclick="createTournament()">Create & Add Players</button>
+        
+        <div id="playerInput" style="display:none;">
+            <h3>Add Players (one per line)</h3>
+            <textarea id="playersList" rows="10" cols="30"></textarea><br>
+            <button onclick="startBracket()">Generate Bracket</button>
+        </div>
+        
+        <div id="bracket" class="brackets-viewer" style="display:none;"></div>
+    </div>
+
+    <!-- brackets-manager & viewer JS -->
+    <script src="https://cdn.jsdelivr.net/npm/brackets-manager@latest/dist/brackets-manager.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/brackets-viewer@latest/dist/brackets-viewer.min.js"></script>
+
+    <script>
+        const { BracketsManager, JsonDatabase } = bracketsManager;
+        const storage = new JsonDatabase();
+        const manager = new BracketsManager(storage);
+
+        let currentStageId;
+
+        function createTournament() {
+            const name = document.getElementById('tourneyName').value || 'My Pool Tourney';
+            const type = document.getElementById('type').value;
+            document.getElementById('playerInput').style.display = 'block';
+            window.tourneyType = type;
+        }
+
+        async function startBracket() {
+            const players = document.getElementById('playersList').value.split('\n').filter(p => p.trim());
+            if (players.length < 2 || players.length > 128) {
+                alert('Need 2-128 players');
+                return;
+            }
+
+            // Create stage (bracket)
+            await manager.create.stage({
+                tournamentId: 0,
+                name: 'Main Stage',
+                type: window.tourneyType,
+                seeding: players,
+                settings: { matchesChildCount: 0 } // Best-of-1 by default
+            });
+
+            const data = await manager.get.stageData(0);
+            currentStageId = data.stage[0].id;
+
+            // Render bracket
+            window.bracketsViewer.render({
+                stages: data.stage,
+                matches: data.match,
+                matchGames: data.match_game,
+                participants: data.participant,
+            }, {
+                selector: '.brackets-viewer',
+                // Custom options here
+            });
+
+            document.getElementById('bracket').style.display = 'block';
+            document.getElementById('playerInput').style.display = 'none';
+
+            // Example: Update a match (you'd build a UI for this)
+            // await manager.update.match({ id: 0, opponent1: { result: 'win' } });
+        }
+    </script>
+</body>
+</html>
