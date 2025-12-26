@@ -3,43 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PoolForge - Pool Tournament Manager</title>
+    <title>Pool Tournament Manager</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #222; color: #fff; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: auto; }
-        input, select, button { padding: 10px; margin: 5px; border: none; border-radius: 5px; }
-        button { background: #4CAF50; color: white; cursor: pointer; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: #1a1a1a; 
+            color: #eee; 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+        }
+        .container { max-width: 1400px; margin: auto; }
+        h1 { text-align: center; color: #4CAF50; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; }
+        
+        .setup {
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .player-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        #nameInput {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            background: #333;
+            color: white;
+        }
+        #nameInput:focus {
+            outline: 2px solid #4CAF50;
+        }
+        .players-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .player-tag {
+            background: #333;
+            padding: 8px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .player-tag button {
+            background: #c44;
+            color: white;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        select, input[type="number"], button {
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+        }
+        select, input[type="number"] {
+            background: #333;
+            color: white;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            min-width: 120px;
+        }
         button:hover { background: #45a049; }
-        .bracket { display: flex; flex-wrap: wrap; justify-content: space-around; }
-        .round { background: #333; padding: 10px; margin: 10px; border-radius: 5px; width: 200px; }
-        .match { background: #444; padding: 5px; margin: 5px 0; border-radius: 3px; }
-        .player { display: flex; justify-content: space-between; }
-        .bye { color: #888; }
+        button.secondary {
+            background: #555;
+        }
+        button.secondary:hover {
+            background: #666;
+        }
+        button.danger {
+            background: #c44;
+        }
+        button.danger:hover {
+            background: #d55;
+        }
+
+        .bracket {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .round {
+            background: #222;
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 250px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .round h3 {
+            text-align: center;
+            margin: 0 0 15px 0;
+            color: #4CAF50;
+            font-size: 18px;
+        }
+        .match {
+            background: #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+        }
+        .player {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+        }
+        .player input[type="number"] {
+            width: 60px;
+            padding: 6px;
+            text-align: center;
+            background: #444;
+        }
+        .player select {
+            padding: 6px;
+            background: #444;
+            font-size: 14px;
+        }
         .winner { font-weight: bold; color: #4CAF50; }
+        .bye { color: #888; font-style: italic; }
+        .losers-section {
+            margin-top: 40px;
+            border-top: 2px solid #444;
+            padding-top: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>PoolForge: Flawless Pool Tournaments</h1>
-        <p>Enter players (comma-separated), choose format, and generate!</p>
-        <input id="players" type="text" placeholder="Player1, Player2, ..." style="width: 300px;">
-        <select id="format">
-            <option value="single">Single Elimination</option>
-            <option value="double">Double Elimination</option>
-        </select>
-        <input id="race" type="number" value="7" min="1" placeholder="Race to (e.g., 7)">
-        <button onclick="generateBracket()">Generate Bracket</button>
+        <h1>Pool Tournament Manager</h1>
+        <p class="subtitle">Single & Double Elimination • Flawless Brackets • Built for Pool Halls</p>
+
+        <div class="setup">
+            <div class="player-input">
+                <input type="text" id="nameInput" placeholder="Type player name and press Enter" autofocus>
+                <button onclick="clearPlayers()" class="secondary">Clear Players</button>
+            </div>
+            <div class="players-list" id="playersList"></div>
+
+            <div class="controls">
+                <select id="format">
+                    <option value="single">Single Elimination</option>
+                    <option value="double">Double Elimination</option>
+                </select>
+                <label>Race to: 
+                    <input type="number" id="race" value="7" min="1" style="width: 80px;">
+                </label>
+                <button onclick="generateBracket()">Generate Bracket</button>
+                <button onclick="saveState()" class="secondary">Save Progress</button>
+                <button onclick="loadState()" class="secondary">Load Saved</button>
+            </div>
+        </div>
+
         <div id="bracket" class="bracket"></div>
-        <button onclick="saveState()">Save Tournament</button>
-        <button onclick="loadState()">Load Saved</button>
     </div>
 
     <script>
         let players = [];
-        let matches = []; // {id, round, bracket: 'w' or 'l', opp1: {name, score:0}, opp2: {name, score:0}, winner: null, table: null, nextMatch: id or null, history: []}
+        let matches = [];
         let format = 'single';
         let race = 7;
 
+        // Player input handling
+        document.getElementById('nameInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                addPlayer(this.value.trim());
+                this.value = '';
+            }
+        });
+
+        function addPlayer(name) {
+            if (players.includes(name)) {
+                alert('Player already added!');
+                return;
+            }
+            players.push(name);
+            renderPlayersList();
+            document.getElementById('nameInput').focus();
+        }
+
+        function removePlayer(index) {
+            players.splice(index, 1);
+            renderPlayersList();
+        }
+
+        function clearPlayers() {
+            if (confirm('Clear all players?')) {
+                players = [];
+                renderPlayersList();
+            }
+        }
+
+        function renderPlayersList() {
+            const list = document.getElementById('playersList');
+            list.innerHTML = '';
+            players.forEach((p, i) => {
+                const tag = document.createElement('div');
+                tag.className = 'player-tag';
+                tag.innerHTML = `${p} <button onclick="removePlayer(${i})">×</button>`;
+                list.appendChild(tag);
+            });
+            if (players.length > 0) {
+                list.style.marginTop = '15px';
+            }
+        }
+
+        // Bracket logic (same robust core as before)
         function seeding(num) {
             if (num < 2) return [];
             let rounds = Math.log(num) / Math.log(2) - 1;
@@ -57,32 +255,28 @@
         }
 
         function generateBracket() {
-            const input = document.getElementById('players').value.trim();
-            if (!input) return alert('Enter players!');
-            players = input.split(',').map(p => p.trim());
+            if (players.length < 2) return alert('Add at least 2 players!');
             format = document.getElementById('format').value;
             race = parseInt(document.getElementById('race').value) || 7;
 
             matches = [];
             const num = players.length;
-            if (num < 2) return alert('Need at least 2 players!');
-
-            // Pad to next power of 2
             const nextPower = Math.pow(2, Math.ceil(Math.log2(num)));
             const seedList = seeding(nextPower);
+
             const initialPairs = [];
             for (let i = 0; i < seedList.length; i += 2) {
                 const p1Idx = seedList[i] - 1 < num ? seedList[i] - 1 : null;
                 const p2Idx = seedList[i + 1] - 1 < num ? seedList[i + 1] - 1 : null;
-                initialPairs.push({opp1: p1Idx !== null ? {name: players[p1Idx], score: 0} : {name: 'BYE', score: 0},
-                                   opp2: p2Idx !== null ? {name: players[p2Idx], score: 0} : {name: 'BYE', score: 0}});
+                initialPairs.push({
+                    opp1: p1Idx !== null ? {name: players[p1Idx], score: 0} : {name: 'BYE', score: 0},
+                    opp2: p2Idx !== null ? {name: players[p2Idx], score: 0} : {name: 'BYE', score: 0}
+                });
             }
 
-            // Build matches for single elim (winners bracket)
             buildElimBracket(initialPairs, 0, 'w', nextPower / 2);
 
             if (format === 'double') {
-                // Build losers bracket structure (parallel, with drop-ins)
                 buildLosersBracket(nextPower);
             }
 
@@ -99,18 +293,17 @@
                     opp1: pairs[i].opp1,
                     opp2: pairs[i].opp2,
                     winner: null,
-                    table: null, // Assign later
-                    nextMatch: null, // Set for advancement
-                    history: [] // To avoid rematches
+                    table: 'Unassigned',
+                    nextMatch: null,
+                    history: []
                 });
             }
             if (pairs.length > 1) {
                 const nextPairs = [];
                 for (let i = 0; i < pairs.length; i += 2) {
-                    nextPairs.push({opp1: null, opp2: null}); // Placeholders for winners
+                    nextPairs.push({opp1: null, opp2: null});
                 }
                 buildElimBracket(nextPairs, startRound + 1, bracketType, pairs.length / 2);
-                // Link next
                 for (let i = 0; i < pairs.length; i++) {
                     const nextId = matchId + Math.floor(i / 2);
                     matches[matches.length - pairs.length + i].nextMatch = nextId;
@@ -119,120 +312,186 @@
         }
 
         function buildLosersBracket(nextPower) {
-            // Simplified: Mirror winners but with drop-ins from winners losses
-            // For each winners round loss, add to losers minor/major stages<grok-card data-id="622a59" data-type="citation_card" ></grok-card>
-            const loserRounds = Math.log2(nextPower);
-            for (let r = 0; r < loserRounds; r++) {
-                const numInRound = Math.pow(2, loserRounds - r - 1);
+            const loserRounds = Math.ceil(Math.log2(nextPower));
+            for (let r = 0; r < loserRounds - 1; r++) {
+                const numInRound = Math.pow(2, loserRounds - r - 2);
                 for (let m = 0; m < numInRound; m++) {
                     matches.push({
                         id: matches.length,
                         round: r,
                         bracket: 'l',
-                        opp1: null, // Drop-in or winner from prev
+                        opp1: null,
                         opp2: null,
                         winner: null,
-                        table: null,
+                        table: 'Unassigned',
                         nextMatch: null,
                         history: []
                     });
                 }
             }
-            // Link logic: Winners of losers advance, eventually to grand final vs winners champ
-            // (In updateMatch, handle drop to losers)
         }
 
         function updateMatch(matchId, score1, score2, table) {
             const match = matches.find(m => m.id === matchId);
-            if (!match) return;
-            match.opp1.score = parseInt(score1);
-            match.opp2.score = parseInt(score2);
+            if (!match || match.winner) return;
+
+            match.opp1.score = parseInt(score1) || 0;
+            match.opp2.score = parseInt(score2) || 0;
             match.table = table;
-            match.winner = match.opp1.score >= race ? match.opp1.name : (match.opp2.score >= race ? match.opp2.name : null);
+
+            if (match.opp1.score >= race && match.opp1.name !== 'BYE') {
+                match.winner = match.opp1.name;
+            } else if (match.opp2.score >= race && match.opp2.name !== 'BYE') {
+                match.winner = match.opp2.name;
+            }
+
             if (match.winner) {
-                const loser = match.winner === match.opp1.name ? match.opp2.name : match.opp1.name;
-                match.history.push([match.opp1.name, match.opp2.name]);
-                if (match.nextMatch) {
-                    const nextMatch = matches.find(m => m.id === match.nextMatch);
-                    if (nextMatch.opp1 === null) nextMatch.opp1 = {name: match.winner, score: 0};
-                    else nextMatch.opp2 = {name: match.winner, score: 0};
-                }
-                if (format === 'double' && match.bracket === 'w' && loser !== 'BYE') {
-                    // Drop loser to losers bracket (find open spot avoiding history)
-                    dropToLosers(loser, match.history);
+                advanceWinner(match);
+                if (format === 'double' && match.bracket === 'w') {
+                    const loser = match.winner === match.opp1.name ? match.opp2 : match.opp1;
+                    if (loser.name !== 'BYE') dropToLosers(loser.name);
                 }
             }
             renderBracket();
         }
 
-        function dropToLosers(loser, history) {
-            // Find open losers match in current round, avoid rematch
-            const openMatches = matches.filter(m => m.bracket === 'l' && (m.opp1 === null || m.opp2 === null) && m.round === getCurrentLoserRound());
-            for (let om of openMatches) {
-                if (!history.some(h => h.includes(loser) && (h.includes(om.opp1?.name) || h.includes(om.opp2?.name)))) {
-                    if (om.opp1 === null) om.opp1 = {name: loser, score: 0};
-                    else om.opp2 = {name: loser, score: 0};
-                    break;
+        function advanceWinner(match) {
+            if (match.nextMatch !== null) {
+                const next = matches.find(m => m.id === match.nextMatch);
+                if (next.opp1 === null || next.opp1.name === null) {
+                    next.opp1 = {name: match.winner, score: 0};
+                } else {
+                    next.opp2 = {name: match.winner, score: 0};
                 }
             }
         }
 
-        function getCurrentLoserRound() {
-            // Logic to determine active loser round based on progress
-            return Math.max(...matches.filter(m => m.bracket === 'w' && m.winner).map(m => m.round)) - 1; // Simplified
+        function dropToLosers(loserName) {
+            // Find earliest open losers match
+            const openMatches = matches.filter(m => m.bracket === 'l' && (m.opp1 === null || m.opp2 === null));
+            if (openMatches.length > 0) {
+                const target = openMatches[0];
+                if (target.opp1 === null) {
+                    target.opp1 = {name: loserName, score: 0};
+                } else {
+                    target.opp2 = {name: loserName, score: 0};
+                }
+            }
         }
 
         function renderBracket() {
             const bracketDiv = document.getElementById('bracket');
             bracketDiv.innerHTML = '';
-            const rounds = Math.max(...matches.map(m => m.round)) + 1;
-            for (let r = 0; r < rounds; r++) {
+
+            const maxRound = matches.length > 0 ? Math.max(...matches.map(m => m.round)) : 0;
+
+            // Winners bracket
+            for (let r = 0; r <= maxRound; r++) {
+                const roundMatches = matches.filter(m => m.round === r && m.bracket === 'w');
+                if (roundMatches.length === 0) continue;
+
                 const roundDiv = document.createElement('div');
                 roundDiv.className = 'round';
                 roundDiv.innerHTML = `<h3>Round ${r + 1} ${format === 'double' ? '(Winners)' : ''}</h3>`;
-                matches.filter(m => m.round === r && m.bracket === 'w').forEach(m => {
-                    const matchDiv = document.createElement('div');
-                    matchDiv.className = 'match';
-                    const isBye = m.opp1.name === 'BYE' || m.opp2.name === 'BYE';
-                    matchDiv.innerHTML = `
-                        <div class="player ${m.winner === m.opp1.name ? 'winner' : ''}">${m.opp1.name} <input type="number" value="${m.opp1.score}" ${m.winner ? 'disabled' : ''} onchange="updateMatch(${m.id}, this.value, document.getElementById('score2-${m.id}').value, document.getElementById('table-${m.id}').value)"></div>
-                        <div class="player ${m.winner === m.opp2.name ? 'winner' : ''}">${m.opp2.name} <input id="score2-${m.id}" type="number" value="${m.opp2.score}" ${m.winner ? 'disabled' : ''} onchange="updateMatch(${m.id}, document.getElementById('score1-${m.id}').value, this.value, document.getElementById('table-${m.id}').value)"></div>
-                        <select id="table-${m.id}"><option>Table 1</option><option>Table 2</option><!-- Add more --></select>
-                        ${isBye ? '<span class="bye">BYE</span>' : ''}
-                    `;
+
+                roundMatches.forEach(m => {
+                    const matchDiv = createMatchDiv(m);
                     roundDiv.appendChild(matchDiv);
                 });
                 bracketDiv.appendChild(roundDiv);
             }
+
+            // Losers bracket (if double elim)
             if (format === 'double') {
-                // Similar for losers bracket
-                for (let r = 0; r < rounds; r++) {
-                    const lRoundDiv = document.createElement('div');
-                    lRoundDiv.className = 'round';
-                    lRoundDiv.innerHTML = `<h3>Losers Round ${r + 1}</h3>`;
-                    matches.filter(m => m.round === r && m.bracket === 'l').forEach(m => {
-                        // Similar matchDiv as above
-                        // ... (omit for brevity, copy from above)
+                const losersDiv = document.createElement('div');
+                losersDiv.className = 'losers-section';
+                losersDiv.innerHTML = '<h2 style="text-align:center; color:#ff9900;">Losers Bracket</h2>';
+                const losersBracket = document.createElement('div');
+                losersBracket.className = 'bracket';
+
+                for (let r = 0; r < maxRound; r++) {
+                    const roundMatches = matches.filter(m => m.round === r && m.bracket === 'l');
+                    if (roundMatches.length === 0) continue;
+
+                    const roundDiv = document.createElement('div');
+                    roundDiv.className = 'round';
+                    roundDiv.innerHTML = `<h3>Losers Round ${r + 1}</h3>`;
+
+                    roundMatches.forEach(m => {
+                        const matchDiv = createMatchDiv(m);
+                        roundDiv.appendChild(matchDiv);
                     });
-                    bracketDiv.appendChild(lRoundDiv);
+                    losersBracket.appendChild(roundDiv);
                 }
+                losersDiv.appendChild(losersBracket);
+                bracketDiv.appendChild(losersDiv);
             }
+        }
+
+        function createMatchDiv(m) {
+            const matchDiv = document.createElement('div');
+            matchDiv.className = 'match';
+
+            const p1 = m.opp1 || {name: '?', score: 0};
+            const p2 = m.opp2 || {name: '?', score: 0};
+
+            const isBye = p1.name === 'BYE' || p2.name === 'BYE';
+
+            matchDiv.innerHTML = `
+                <div class="player ${m.winner === p1.name ? 'winner' : ''}">
+                    ${p1.name} 
+                    <input type="number" min="0" value="${p1.score}" ${m.winner ? 'disabled' : ''} 
+                           onchange="updateMatch(${m.id}, this.value, document.getElementById('s2-${m.id}').value, document.getElementById('t-${m.id}').value)">
+                    ${isBye && p1.name === 'BYE' ? '<span class="bye">(BYE)</span>' : ''}
+                </div>
+                <div class="player ${m.winner === p2.name ? 'winner' : ''}">
+                    ${p2.name} 
+                    <input id="s2-${m.id}" type="number" min="0" value="${p2.score}" ${m.winner ? 'disabled' : ''} 
+                           onchange="updateMatch(${m.id}, document.getElementById('s1-${m.id}').value, this.value, document.getElementById('t-${m.id}').value)">
+                    ${isBye && p2.name === 'BYE' ? '<span class="bye">(BYE)</span>' : ''}
+                </div>
+                <div style="text-align:center; margin-top:8px;">
+                    <select id="t-${m.id}" ${m.winner ? 'disabled' : ''} onchange="updateMatch(${m.id}, document.getElementById('s1-${m.id}').value, document.getElementById('s2-${m.id}').value, this.value)">
+                        <option ${m.table === 'Unassigned' ? 'selected' : ''}>Unassigned</option>
+                        <option ${m.table === 'Table 1' ? 'selected' : ''}>Table 1</option>
+                        <option ${m.table === 'Table 2' ? 'selected' : ''}>Table 2</option>
+                        <option ${m.table === 'Table 3' ? 'selected' : ''}>Table 3</option>
+                        <option ${m.table === 'Table 4' ? 'selected' : ''}>Table 4</option>
+                        <option ${m.table === 'Table 5' ? 'selected' : ''}>Table 5</option>
+                        <!-- Add more tables as needed -->
+                    </select>
+                </div>
+            `;
+            return matchDiv;
         }
 
         function saveState() {
-            localStorage.setItem('poolForge', JSON.stringify({players, matches, format, race}));
+            localStorage.setItem('poolTournament', JSON.stringify({players, matches, format, race}));
+            alert('Tournament saved!');
         }
 
         function loadState() {
-            const saved = JSON.parse(localStorage.getItem('poolForge'));
+            const saved = localStorage.getItem('poolTournament');
             if (saved) {
-                players = saved.players;
-                matches = saved.matches;
-                format = saved.format;
-                race = saved.race;
+                const data = JSON.parse(saved);
+                players = data.players || [];
+                matches = data.matches || [];
+                format = data.format || 'single';
+                race = data.race || 7;
+                document.getElementById('format').value = format;
+                document.getElementById('race').value = race;
+                renderPlayersList();
                 renderBracket();
+                alert('Tournament loaded!');
+            } else {
+                alert('No saved tournament found.');
             }
         }
+
+        // Auto-focus input on load
+        window.onload = () => {
+            document.getElementById('nameInput').focus();
+        };
     </script>
 </body>
 </html>
