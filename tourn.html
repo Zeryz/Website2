@@ -5,19 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pool Tournament Manager</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #1a1a1a;
-            color: #eee;
-            margin: 0;
-            padding: 20px;
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: #1a1a1a; 
+            color: #eee; 
+            margin: 0; 
+            padding: 20px; 
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
-        .container {
-            max-width: 1600px;
-            margin: auto;
+        .container { 
+            max-width: 1600px; 
+            margin: auto; 
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -25,7 +25,7 @@
         }
         h1 { text-align: center; color: #4CAF50; margin-bottom: 10px; }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
-       
+        
         .setup {
             background: #222;
             padding: 20px;
@@ -117,6 +117,7 @@
         button.secondary:hover {
             background: #666;
         }
+
         .main-area {
             display: flex;
             gap: 30px;
@@ -241,12 +242,23 @@
             font-size: 13px;
         }
 
-        .champion {
+        .podium {
             text-align: center;
-            font-size: 32px;
-            color: #4CAF50;
             margin: 50px 0;
-            text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            font-size: 28px;
+        }
+        .podium .first {
+            color: gold;
+            font-weight: bold;
+        }
+        .podium .second {
+            color: silver;
+        }
+        .podium .third {
+            color: #cd7f32; /* bronze */
+        }
+        .podium div {
+            margin: 10px 0;
         }
 
         #nextRoundBtn {
@@ -287,7 +299,7 @@
                 <div id="nextRoundBtn">
                     <button onclick="generateNextRound()">Generate Next Round</button>
                 </div>
-                <div id="champion" class="champion" style="display: none;"></div>
+                <div id="podium" class="podium" style="display: none;"></div>
             </div>
         </div>
     </div>
@@ -357,7 +369,7 @@
         function generateNextRound() {
             let active = getActivePlayers();
             if (active.length <= 1) {
-                checkForChampion();
+                checkForPodium();
                 return;
             }
 
@@ -438,10 +450,8 @@
             }
             if (!confirm(message)) return;
 
-            // Remove from players
             players = players.filter(p => p.name !== name);
 
-            // Adjust current round if ongoing and not complete
             if (currentRoundIndex >= 0 && !isCurrentRoundComplete()) {
                 let round = rounds[currentRoundIndex];
                 let byeIndex = round.findIndex(item => item.type === 'bye');
@@ -450,22 +460,17 @@
                 if (matchIndex > -1) {
                     const match = round[matchIndex];
                     const opponent = match.p1 === name ? match.p2 : match.p1;
-                    // Remove the match
                     round.splice(matchIndex, 1);
                     if (byeIndex > -1) {
                         const byePlayerName = round[byeIndex].player;
                         round.splice(byeIndex, 1);
-                        // Add new match with bye player and opponent
                         round.push({p1: byePlayerName, p2: opponent, winner: null});
-                        // Decrement bye count
                         const byeP = players.find(p => p.name === byePlayerName);
                         if (byeP) byeP.byes -= 1;
                     } else {
-                        // No bye, opponent gets bye
                         round.push({type: 'bye', player: opponent});
                     }
                 } else if (byeIndex > -1 && round[byeIndex].player === name) {
-                    // Removed had bye, remove bye entry
                     round.splice(byeIndex, 1);
                 }
             }
@@ -538,7 +543,7 @@
         function renderAll() {
             renderStandings();
             renderRounds();
-            checkForChampion();
+            checkForPodium();
 
             if (isCurrentRoundComplete() && getActivePlayers().length > 1) {
                 document.getElementById('nextRoundBtn').style.display = 'block';
@@ -547,14 +552,27 @@
             }
         }
 
-        function checkForChampion() {
-            const active = getActivePlayers();
-            if (active.length === 1) {
-                document.getElementById('champion').textContent = `🏆 Winner: ${active[0].name} 🏆`;
-                document.getElementById('champion').style.display = 'block';
+        function checkForPodium() {
+            applyMatchResults(); // Ensure losses are up to date
+            const finalPlayers = [...players].sort((a, b) => a.losses - b.losses || a.name.localeCompare(b.name));
+
+            const podiumDiv = document.getElementById('podium');
+            podiumDiv.innerHTML = '';
+            podiumDiv.style.display = 'none';
+
+            if (finalPlayers.length >= 1) {
+                podiumDiv.innerHTML += `<div class="first">1st Place: ${finalPlayers[0].name}</div>`;
+            }
+            if (finalPlayers.length >= 2) {
+                podiumDiv.innerHTML += `<div class="second">2nd Place: ${finalPlayers[1].name}</div>`;
+            }
+            if (finalPlayers.length >= 3) {
+                podiumDiv.innerHTML += `<div class="third">3rd Place: ${finalPlayers[2].name}</div>`;
+            }
+
+            if (finalPlayers.length >= 1) {
+                podiumDiv.style.display = 'block';
                 document.getElementById('nextRoundBtn').style.display = 'none';
-            } else {
-                document.getElementById('champion').style.display = 'none';
             }
         }
 
