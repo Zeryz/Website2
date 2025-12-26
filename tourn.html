@@ -60,22 +60,32 @@
         }
         .player-tag {
             background: #333;
-            padding: 8px 12px;
-            border-radius: 20px;
+            padding: 8px 16px;
+            border-radius: 30px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         .player-tag button {
             background: #c44;
             color: white;
             border: none;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .player-tag button:hover {
+            background: #f55;
+            transform: scale(1.1);
         }
         .controls {
             display: flex;
@@ -426,7 +436,7 @@
                         p1Div.textContent = item.p1;
                         p1Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (currentRoundIndex === rIdx) { // Only allow changes in current round
+                            if (currentRoundIndex === rIdx) {
                                 item.winner = item.p1;
                                 renderAll();
                             }
