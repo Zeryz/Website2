@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,16 +12,24 @@
             margin: 0; 
             padding: 20px; 
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-        .container { max-width: 1400px; margin: auto; }
+        .container { 
+            max-width: 1600px; 
+            margin: auto; 
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
         h1 { text-align: center; color: #4CAF50; margin-bottom: 10px; }
-        .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; }
+        .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
         
         .setup {
             background: #222;
             padding: 20px;
             border-radius: 10px;
-            margin-bottom: 30px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         .player-input {
@@ -101,23 +108,43 @@
             background: #666;
         }
 
-        .standings {
+        .main-area {
+            display: flex;
+            gap: 30px;
+            flex: 1;
+        }
+        .standings-sidebar {
+            width: 300px;
             background: #222;
             padding: 20px;
             border-radius: 10px;
-            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            align-self: start;
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
         }
-        .standings table {
+        .standings-sidebar h2 {
+            text-align: center;
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .standings-sidebar table {
             width: 100%;
             border-collapse: collapse;
         }
-        .standings th, .standings td {
-            padding: 10px;
+        .standings-sidebar th, .standings-sidebar td {
+            padding: 8px;
             text-align: left;
             border-bottom: 1px solid #444;
         }
         .eliminated { color: #c44; text-decoration: line-through; }
 
+        .tournament-area {
+            flex: 1;
+            overflow-y: auto;
+        }
         .tournament {
             display: flex;
             flex-direction: column;
@@ -135,17 +162,19 @@
             text-align: center;
         }
         .matches {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
         }
         .match {
             background: #333;
-            padding: 20px;
-            border-radius: 10px;
-            width: 260px;
+            padding: 12px;
+            border-radius: 8px;
             text-align: center;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .match.clickable {
             cursor: pointer;
@@ -155,11 +184,16 @@
         }
         .bye-match {
             background: #282828;
-            opacity: 0.8;
+            opacity: 0.9;
         }
-        .player {
-            padding: 10px 0;
-            font-size: 18px;
+        .player-line {
+            font-size: 16px;
+            padding: 4px 0;
+        }
+        .vs {
+            font-size: 14px;
+            color: #888;
+            margin: 4px 0;
         }
         .winner {
             font-weight: bold;
@@ -168,12 +202,12 @@
         .bye {
             color: #888;
             font-style: italic;
-            font-size: 16px;
+            font-size: 15px;
         }
         .table-info {
-            margin-top: 15px;
+            margin-top: 8px;
             color: #aaa;
-            font-size: 15px;
+            font-size: 13px;
         }
 
         .champion {
@@ -182,6 +216,12 @@
             color: #4CAF50;
             margin: 50px 0;
             text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        #nextRoundBtn {
+            text-align: center;
+            margin: 30px 0;
+            display: none;
         }
 
         /* Modal */
@@ -240,12 +280,17 @@
             </div>
         </div>
 
-        <div id="standings" class="standings" style="display:none;"></div>
-        <div id="tournament" class="tournament"></div>
-        <div id="nextRoundBtn" style="text-align: center; margin: 30px 0; display: none;">
-            <button onclick="generateNextRound()">Generate Next Round</button>
+        <div class="main-area">
+            <div id="standings" class="standings-sidebar" style="display:none;"></div>
+
+            <div class="tournament-area">
+                <div id="tournament" class="tournament"></div>
+                <div id="nextRoundBtn">
+                    <button onclick="generateNextRound()">Generate Next Round</button>
+                </div>
+                <div id="champion" class="champion" style="display: none;"></div>
+            </div>
         </div>
-        <div id="champion" class="champion" style="display: none;"></div>
     </div>
 
     <!-- Modal -->
@@ -266,6 +311,11 @@
                 <option value="Table 8">Table 8</option>
                 <option value="Table 9">Table 9</option>
                 <option value="Table 10">Table 10</option>
+                <option value="Table 11">Table 11</option>
+                <option value="Table 12">Table 12</option>
+                <option value="Table 13">Table 13</option>
+                <option value="Table 14">Table 14</option>
+                <option value="Table 15">Table 15</option>
             </select>
             <button onclick="confirmUpdate()">Confirm</button>
             <button class="secondary" onclick="closeModal()">Cancel</button>
@@ -277,7 +327,7 @@
         let players = []; // {name, losses: 0, byes: 0}
         let format = 'single';
         let maxLosses = 1;
-        let rounds = []; // Array of round arrays, each containing match objects {p1, p2, winner, table} or {type: 'bye', player}
+        let rounds = []; // Array of round arrays: match {p1, p2, winner, table} or {type: 'bye', player}
         let currentRoundIndex = -1;
         let currentMatchIndex = -1;
 
@@ -348,19 +398,16 @@
             const newRound = [];
             let byePlayer = null;
 
-            // If odd number, give bye to random player with min byes
             if (shuffled.length % 2 === 1) {
                 const minByes = Math.min(...active.map(p => p.byes));
                 const candidates = active.filter(p => p.byes === minByes);
                 byePlayer = candidates[Math.floor(Math.random() * candidates.length)];
                 byePlayer.byes += 1;
-                newRound.push({type: 'bye', player: byePlayer.name}); // Add bye entry
-                // Remove from shuffled
+                newRound.push({type: 'bye', player: byePlayer.name});
                 const index = shuffled.findIndex(p => p.name === byePlayer.name);
                 if (index > -1) shuffled.splice(index, 1);
             }
 
-            // Create real matches from shuffled
             for (let i = 0; i < shuffled.length; i += 2) {
                 newRound.push({
                     p1: shuffled[i].name,
@@ -383,7 +430,6 @@
         }
 
         function applyMatchResults() {
-            // Reset losses to avoid double-counting on reload/render
             players.forEach(p => p.losses = 0);
 
             rounds.forEach(round => {
@@ -400,10 +446,10 @@
         function renderStandings() {
             applyMatchResults();
             const div = document.getElementById('standings');
-            div.innerHTML = '<h2 style="text-align:center;">Standings</h2><table><tr><th>Player</th><th>Losses</th></tr></table>';
+            div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th></tr></table>';
             const table = div.querySelector('table');
 
-            [...players].sort((a, b) => a.losses - b.losses).forEach(p => {
+            [...players].sort((a, b) => a.losses - b.losses || a.name.localeCompare(b.name)).forEach(p => {
                 const row = document.createElement('tr');
                 const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
                 row.innerHTML = `<td class="${statusClass}">${p.name}</td><td>${p.losses}</td>`;
@@ -427,7 +473,7 @@
                     if (item.type === 'bye') {
                         itemDiv.className = 'match bye-match';
                         itemDiv.innerHTML = `
-                            <div class="player">${item.player}</div>
+                            <div class="player-line">${item.player}</div>
                             <div class="bye">Bye this round</div>
                         `;
                     } else {
@@ -439,8 +485,9 @@
                         const p1Class = item.winner === item.p1 ? 'winner' : '';
                         const p2Class = item.winner === item.p2 ? 'winner' : '';
                         itemDiv.innerHTML = `
-                            <div class="player ${p1Class}">${item.p1}</div>
-                            <div class="player ${p2Class}">${item.p2}</div>
+                            <div class="player-line ${p1Class}">${item.p1}</div>
+                            <div class="vs">vs</div>
+                            <div class="player-line ${p2Class}">${item.p2}</div>
                             <div class="table-info">${item.table}</div>
                         `;
                     }
@@ -511,7 +558,7 @@
                 players,
                 rounds
             }));
-            alert('Tournament saved!');
+            alert('Tournament progress saved!');
         }
 
         function loadState() {
@@ -537,4 +584,3 @@
     </script>
 </body>
 </html>
-```
