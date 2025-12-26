@@ -72,11 +72,11 @@
             background: #c44;
             color: white;
             border: none;
-            width: 22px;
-            height: 22px;
-            border-radius: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 11px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -85,7 +85,7 @@
         }
         .player-tag button:hover {
             background: #f55;
-            transform: scale(1.1);
+            transform: scale(1.2);
         }
         .controls {
             display: flex;
@@ -237,17 +237,7 @@
         .podium {
             text-align: center;
             margin: 50px 0;
-            font-size: 28px;
-        }
-        .podium .first {
-            color: gold;
-            font-weight: bold;
-        }
-        .podium .second {
-            color: silver;
-        }
-        .podium .third {
-            color: #cd7f32; /* bronze */
+            font-size: 24px;
         }
         .podium div {
             margin: 10px 0;
@@ -524,23 +514,14 @@
             podiumDiv.innerHTML = '';
             podiumDiv.style.display = 'none';
 
-            // Check for tie at 3rd place losses
             if (finalPlayers.length >= 4 && finalPlayers[2].losses === finalPlayers[3].losses && !tiebreakerActive) {
                 tiebreakerActive = true;
-                const tiePlayers = finalPlayers.slice(2).filter(p => p.losses === finalPlayers[2].losses);
-                const shuffledTie = tiePlayers.sort(() => Math.random() - 0.5);
-                const tieRound = [];
-                for (let i = 0; i < shuffledTie.length; i += 2) {
-                    if (i + 1 < shuffledTie.length) {
-                        tieRound.push({
-                            p1: shuffledTie[i].name,
-                            p2: shuffledTie[i + 1].name,
-                            winner: null
-                        });
-                    } else {
-                        tieRound.push({type: 'bye', player: shuffledTie[i].name});
-                    }
-                }
+                const tiePlayers = [finalPlayers[2].name, finalPlayers[3].name];
+                const tieRound = [{
+                    p1: tiePlayers[0],
+                    p2: tiePlayers[1],
+                    winner: null
+                }];
                 rounds.push(tieRound);
                 currentRoundIndex = rounds.length - 1;
                 renderAll();
@@ -549,13 +530,13 @@
 
             // Display podium
             if (finalPlayers.length >= 1) {
-                podiumDiv.innerHTML += `<div class="first">1st Place: ${finalPlayers[0].name}</div>`;
+                podiumDiv.innerHTML += `<div>1st Place: ${finalPlayers[0].name}</div>`;
             }
             if (finalPlayers.length >= 2) {
-                podiumDiv.innerHTML += `<div class="second">2nd Place: ${finalPlayers[1].name}</div>`;
+                podiumDiv.innerHTML += `<div>2nd Place: ${finalPlayers[1].name}</div>`;
             }
             if (finalPlayers.length >= 3) {
-                podiumDiv.innerHTML += `<div class="third">3rd Place: ${finalPlayers[2].name}</div>`;
+                podiumDiv.innerHTML += `<div>3rd Place: ${finalPlayers[2].name}</div>`;
             }
             podiumDiv.style.display = 'block';
             document.getElementById('nextRoundBtn').style.display = 'none';
