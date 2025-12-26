@@ -136,14 +136,14 @@
         .matches {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 20px;
             justify-content: center;
         }
         .match {
             background: #333;
-            padding: 15px;
-            border-radius: 8px;
-            width: 240px;
+            padding: 20px;
+            border-radius: 10px;
+            width: 260px;
             text-align: center;
         }
         .match.clickable {
@@ -153,29 +153,25 @@
             background: #444;
         }
         .player {
-            padding: 8px 0;
-            font-size: 16px;
+            padding: 10px 0;
+            font-size: 18px;
         }
         .winner {
             font-weight: bold;
             color: #4CAF50;
         }
-        .bye {
-            color: #888;
-            font-style: italic;
-            font-size: 14px;
-        }
         .table-info {
-            margin-top: 10px;
+            margin-top: 15px;
             color: #aaa;
-            font-size: 14px;
+            font-size: 15px;
         }
 
         .champion {
             text-align: center;
-            font-size: 28px;
+            font-size: 32px;
             color: #4CAF50;
-            margin: 40px 0;
+            margin: 50px 0;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
         }
 
         /* Modal */
@@ -193,7 +189,7 @@
             background: #333;
             padding: 30px;
             border-radius: 10px;
-            width: 320px;
+            width: 340px;
             text-align: center;
         }
         .modal-content select {
@@ -207,14 +203,14 @@
             font-size: 16px;
         }
         .modal-content button {
-            margin: 8px;
+            margin: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Pool Tournament Manager</h1>
-        <p class="subtitle">Single & Double Elimination • Random Pairings • One Bye Max</p>
+        <p class="subtitle">Single & Double Elimination • Random Pairings • Clean Layout</p>
 
         <div class="setup">
             <div class="player-input">
@@ -246,7 +242,7 @@
     <div id="matchModal">
         <div class="modal-content">
             <h3>Select Winner</h3>
-            <p id="matchPlayers" style="font-size:18px; margin:15px 0;"></p>
+            <p id="matchPlayers" style="font-size:20px; margin:20px 0;"></p>
             <select id="winnerSelect"></select>
             <select id="tableSelect">
                 <option value="Unassigned">Unassigned</option>
@@ -271,7 +267,7 @@
         let players = []; // {name, losses: 0, byes: 0}
         let format = 'single';
         let maxLosses = 1;
-        let rounds = []; // [{p1, p2, winner, table}]
+        let rounds = []; // Only real matches: [{p1, p2, winner, table}]
         let currentRoundIndex = -1;
         let currentMatchIndex = -1;
 
@@ -330,7 +326,7 @@
         }
 
         function generateNextRound() {
-            const active = getActivePlayers();
+            let active = getActivePlayers();
             if (active.length <= 1) {
                 checkForChampion();
                 return;
@@ -340,29 +336,24 @@
             const shuffled = [...active].sort(() => Math.random() - 0.5);
 
             const newRound = [];
-            let i = 0;
-            while (i < shuffled.length - 1) {
+            let byePlayer = null;
+
+            // If odd number, give bye to player with fewest byes
+            if (shuffled.length % 2 === 1) {
+                active.sort((a, b) => a.byes - b.byes);
+                byePlayer = active[0];
+                byePlayer.byes += 1;
+                shuffled.splice(shuffled.indexOf(byePlayer), 1); // Remove from pairing
+            }
+
+            // Create real matches
+            for (let i = 0; i < shuffled.length; i += 2) {
                 newRound.push({
                     p1: shuffled[i].name,
                     p2: shuffled[i + 1].name,
                     winner: null,
                     table: 'Unassigned'
                 });
-                i += 2;
-            }
-
-            // One bye if odd number
-            if (shuffled.length % 2 === 1) {
-                // Give bye to player with fewest byes
-                active.sort((a, b) => a.byes - b.byes);
-                const byePlayer = active[0];
-                newRound.push({
-                    p1: byePlayer.name,
-                    p2: null,
-                    winner: byePlayer.name,  // Auto-win
-                    table: 'Bye'
-                });
-                byePlayer.byes += 1;
             }
 
             rounds.push(newRound);
@@ -380,7 +371,7 @@
         function applyMatchResults() {
             rounds.forEach(round => {
                 round.forEach(match => {
-                    if (match.winner && match.p2 !== null) { // Only real matches give a loss
+                    if (match.winner) {
                         const loserName = match.winner === match.p1 ? match.p2 : match.p1;
                         const loser = players.find(p => p.name === loserName);
                         if (loser) loser.losses += 1;
@@ -390,16 +381,15 @@
         }
 
         function renderStandings() {
-            applyMatchResults(); // Ensure losses are up to date
+            applyMatchResults();
             const div = document.getElementById('standings');
-            div.innerHTML = '<h2 style="text-align:center;">Standings</h2><table><tr><th>Player</th><th>Losses</th><th>Byes</th></tr></table>';
+            div.innerHTML = '<h2 style="text-align:center;">Standings</h2><table><tr><th>Player</th><th>Losses</th></tr></table>';
             const table = div.querySelector('table');
 
-            // Sort by losses, then byes
-            [...players].sort((a, b) => a.losses - b.losses || a.byes - b.byes).forEach(p => {
+            [...players].sort((a, b) => a.losses - b.losses).forEach(p => {
                 const row = document.createElement('tr');
                 const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
-                row.innerHTML = `<td class="${statusClass}">${p.name}</td><td>${p.losses}</td><td>${p.byes}</td>`;
+                row.innerHTML = `<td class="${statusClass}">${p.name}</td><td>${p.losses}</td>`;
                 table.appendChild(row);
             });
         }
@@ -418,28 +408,19 @@
                 round.forEach((match, mIdx) => {
                     const matchDiv = document.createElement('div');
                     matchDiv.className = 'match';
-                    if (match.winner === null && match.p2 !== null) {
+                    if (match.winner === null) {
                         matchDiv.classList.add('clickable');
                         matchDiv.onclick = () => openModal(rIdx, mIdx);
                     }
 
-                    let html = '';
-                    if (match.p2 === null) {
-                        // Bye match
-                        html = `
-                            <div class="player winner">${match.p1}</div>
-                            <div class="bye">Automatic Bye Win</div>
-                        `;
-                    } else {
-                        const p1Class = match.winner === match.p1 ? 'winner' : '';
-                        const p2Class = match.winner === match.p2 ? 'winner' : '';
-                        html = `
-                            <div class="player ${p1Class}">${match.p1}</div>
-                            <div class="player ${p2Class}">${match.p2}</div>
-                        `;
-                    }
-                    html += `<div class="table-info">${match.table}</div>`;
-                    matchDiv.innerHTML = html;
+                    const p1Class = match.winner === match.p1 ? 'winner' : '';
+                    const p2Class = match.winner === match.p2 ? 'winner' : '';
+
+                    matchDiv.innerHTML = `
+                        <div class="player ${p1Class}">${match.p1}</div>
+                        <div class="player ${p2Class}">${match.p2}</div>
+                        <div class="table-info">${match.table}</div>
+                    `;
                     matchesDiv.appendChild(matchDiv);
                 });
 
