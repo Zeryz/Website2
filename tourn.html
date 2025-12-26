@@ -194,6 +194,10 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            cursor: pointer;
+        }
+        .player-line:hover {
+            background: rgba(76, 175, 80, 0.2);
         }
         .vs {
             font-size: 12px;
@@ -209,11 +213,6 @@
             font-style: italic;
             font-size: 13px;
         }
-        .table-info {
-            margin-top: 4px;
-            color: #aaa;
-            font-size: 12px;
-        }
 
         .champion {
             text-align: center;
@@ -228,44 +227,12 @@
             margin: 30px 0;
             display: none;
         }
-
-        /* Modal */
-        #matchModal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: #333;
-            padding: 30px;
-            border-radius: 10px;
-            width: 340px;
-            text-align: center;
-        }
-        .modal-content select {
-            width: 100%;
-            margin: 15px 0;
-            padding: 12px;
-            background: #444;
-            color: #eee;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-        .modal-content button {
-            margin: 10px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Pool Tournament Manager</h1>
-        <p class="subtitle">Single & Double Elimination • Random Pairings • Ultra-Compact Matches</p>
+        <p class="subtitle">Single & Double Elimination • Random Pairings • Click Name to Win</p>
 
         <div class="setup">
             <div class="player-input">
@@ -298,43 +265,13 @@
         </div>
     </div>
 
-    <!-- Modal -->
-    <div id="matchModal">
-        <div class="modal-content">
-            <h3>Select Winner</h3>
-            <p id="matchPlayers" style="font-size:20px; margin:20px 0;"></p>
-            <select id="winnerSelect"></select>
-            <select id="tableSelect">
-                <option value="Unassigned">Unassigned</option>
-                <option value="Table 1">Table 1</option>
-                <option value="Table 2">Table 2</option>
-                <option value="Table 3">Table 3</option>
-                <option value="Table 4">Table 4</option>
-                <option value="Table 5">Table 5</option>
-                <option value="Table 6">Table 6</option>
-                <option value="Table 7">Table 7</option>
-                <option value="Table 8">Table 8</option>
-                <option value="Table 9">Table 9</option>
-                <option value="Table 10">Table 10</option>
-                <option value="Table 11">Table 11</option>
-                <option value="Table 12">Table 12</option>
-                <option value="Table 13">Table 13</option>
-                <option value="Table 14">Table 14</option>
-                <option value="Table 15">Table 15</option>
-            </select>
-            <button onclick="confirmUpdate()">Confirm</button>
-            <button class="secondary" onclick="closeModal()">Cancel</button>
-        </div>
-    </div>
-
     <script>
         let playerNames = [];
         let players = []; // {name, losses: 0, byes: 0}
         let format = 'single';
         let maxLosses = 1;
-        let rounds = []; // Array of round arrays: match {p1, p2, winner, table} or {type: 'bye', player}
+        let rounds = []; // Array of round arrays: match {p1, p2, winner} or {type: 'bye', player}
         let currentRoundIndex = -1;
-        let currentMatchIndex = -1;
 
         // Player handling
         document.getElementById('nameInput').addEventListener('keydown', e => {
@@ -416,8 +353,7 @@
                 newRound.push({
                     p1: shuffled[i].name,
                     p2: shuffled[i + 1].name,
-                    winner: null,
-                    table: 'Unassigned'
+                    winner: null
                 });
             }
 
@@ -482,18 +418,38 @@
                         `;
                     } else {
                         itemDiv.className = 'match';
-                        if (item.winner === null) {
-                            itemDiv.classList.add('clickable');
-                            itemDiv.onclick = () => openModal(rIdx, mIdx);
-                        }
-                        const p1Class = item.winner === item.p1 ? 'winner' : '';
-                        const p2Class = item.winner === item.p2 ? 'winner' : '';
-                        itemDiv.innerHTML = `
-                            <div class="player-line ${p1Class}">${item.p1}</div>
-                            <div class="vs">vs</div>
-                            <div class="player-line ${p2Class}">${item.p2}</div>
-                            <div class="table-info">${item.table}</div>
-                        `;
+                        const p1Class = item.winner === item.p1 ? 'winner player-line clickable' : 'player-line clickable';
+                        const p2Class = item.winner === item.p2 ? 'winner player-line clickable' : 'player-line clickable';
+
+                        const p1Div = document.createElement('div');
+                        p1Div.className = p1Class;
+                        p1Div.textContent = item.p1;
+                        p1Div.onclick = (e) => {
+                            e.stopPropagation();
+                            if (currentRoundIndex === rIdx) { // Only allow changes in current round
+                                item.winner = item.p1;
+                                renderAll();
+                            }
+                        };
+
+                        const vsDiv = document.createElement('div');
+                        vsDiv.className = 'vs';
+                        vsDiv.textContent = 'vs';
+
+                        const p2Div = document.createElement('div');
+                        p2Div.className = p2Class;
+                        p2Div.textContent = item.p2;
+                        p2Div.onclick = (e) => {
+                            e.stopPropagation();
+                            if (currentRoundIndex === rIdx) {
+                                item.winner = item.p2;
+                                renderAll();
+                            }
+                        };
+
+                        itemDiv.appendChild(p1Div);
+                        itemDiv.appendChild(vsDiv);
+                        itemDiv.appendChild(p2Div);
                     }
                     matchesDiv.appendChild(itemDiv);
                 });
@@ -524,35 +480,6 @@
             } else {
                 document.getElementById('champion').style.display = 'none';
             }
-        }
-
-        function openModal(roundIdx, matchIdx) {
-            currentRoundIndex = roundIdx;
-            currentMatchIndex = matchIdx;
-            const match = rounds[roundIdx][matchIdx];
-
-            document.getElementById('matchPlayers').textContent = `${match.p1} vs ${match.p2}`;
-
-            const select = document.getElementById('winnerSelect');
-            select.innerHTML = `
-                <option value="${match.p1}">${match.p1}</option>
-                <option value="${match.p2}">${match.p2}</option>
-            `;
-
-            document.getElementById('tableSelect').value = match.table;
-            document.getElementById('matchModal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('matchModal').style.display = 'none';
-        }
-
-        function confirmUpdate() {
-            const match = rounds[currentRoundIndex][currentMatchIndex];
-            match.winner = document.getElementById('winnerSelect').value;
-            match.table = document.getElementById('tableSelect').value;
-            closeModal();
-            renderAll();
         }
 
         function saveState() {
