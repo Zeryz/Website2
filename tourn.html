@@ -108,7 +108,7 @@
             background: #4CAF50;
             color: white;
             cursor: pointer;
-            min-width: 20px;
+            min-width: 120px;
         }
         button:hover { background: #45a049; }
         button.secondary {
@@ -154,15 +154,10 @@
             background: #c44;
             color: white;
             border: none;
-            width: 20px;
-            height: 20px;
+            padding: 4px 8px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             transition: background 0.2s;
         }
         .remove-btn:hover {
@@ -551,7 +546,7 @@
         function checkForChampion() {
             const active = getActivePlayers();
             if (active.length === 1) {
-                document.getElementById('champion').textContent = `Winner: ${active[0].name}`;
+                document.getElementById('champion').textContent = `🏆 Winner: ${active[0].name} 🏆`;
                 document.getElementById('champion').style.display = 'block';
                 document.getElementById('nextRoundBtn').style.display = 'none';
             } else {
