@@ -76,13 +76,13 @@
             align-items: center;
             justify-content: center;
         }
-        select, input[type="number"], button {
+        select, button {
             padding: 12px;
             font-size: 16px;
             border: none;
             border-radius: 6px;
         }
-        select, input[type="number"] {
+        select {
             background: #333;
             color: white;
         }
@@ -99,59 +99,7 @@
         button.secondary:hover {
             background: #666;
         }
-        button.danger {
-            background: #c44;
-        }
-        button.danger:hover {
-            background: #d55;
-        }
 
-        .tournament {
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-        }
-        .round {
-            background: #222;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        .round h2 {
-            margin: 0 0 15px 0;
-            color: #4CAF50;
-        }
-        .matches {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .match {
-            background: #333;
-            padding: 15px;
-            border-radius: 8px;
-            width: 220px;
-            cursor: pointer;
-        }
-        .match:hover {
-            background: #444;
-        }
-        .player {
-            padding: 5px 0;
-        }
-        .winner {
-            font-weight: bold;
-            color: #4CAF50;
-        }
-        .bye {
-            color: #888;
-            font-style: italic;
-        }
-        .table-info {
-            text-align: center;
-            color: #aaa;
-            margin-top: 10px;
-        }
         .standings {
             background: #222;
             padding: 20px;
@@ -167,24 +115,75 @@
             text-align: left;
             border-bottom: 1px solid #444;
         }
-        .eliminated {
-            color: #c44;
+        .eliminated { color: #c44; text-decoration: line-through; }
+
+        .tournament {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
         }
+        .round {
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .round h2 {
+            margin: 0 0 15px 0;
+            color: #4CAF50;
+            text-align: center;
+        }
+        .matches {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+        .match {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            width: 240px;
+            text-align: center;
+        }
+        .match.clickable {
+            cursor: pointer;
+        }
+        .match.clickable:hover {
+            background: #444;
+        }
+        .player {
+            padding: 8px 0;
+            font-size: 16px;
+        }
+        .winner {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .bye {
+            color: #888;
+            font-style: italic;
+            font-size: 14px;
+        }
+        .table-info {
+            margin-top: 10px;
+            color: #aaa;
+            font-size: 14px;
+        }
+
         .champion {
             text-align: center;
-            font-size: 24px;
+            font-size: 28px;
             color: #4CAF50;
-            margin: 20px 0;
+            margin: 40px 0;
         }
 
         /* Modal */
         #matchModal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: rgba(0,0,0,0.8);
             justify-content: center;
             align-items: center;
@@ -192,29 +191,30 @@
         }
         .modal-content {
             background: #333;
-            padding: 20px;
+            padding: 30px;
             border-radius: 10px;
-            width: 300px;
+            width: 320px;
             text-align: center;
         }
         .modal-content select {
             width: 100%;
-            margin: 10px 0;
-            padding: 10px;
+            margin: 15px 0;
+            padding: 12px;
             background: #444;
             color: #eee;
             border: none;
             border-radius: 6px;
+            font-size: 16px;
         }
         .modal-content button {
-            margin: 5px;
+            margin: 8px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Pool Tournament Manager</h1>
-        <p class="subtitle">Single & Double Elimination • Random Pairings Each Round • Minimal Byes</p>
+        <p class="subtitle">Single & Double Elimination • Random Pairings • One Bye Max</p>
 
         <div class="setup">
             <div class="player-input">
@@ -234,19 +234,19 @@
             </div>
         </div>
 
-        <div id="standings" class="standings"></div>
+        <div id="standings" class="standings" style="display:none;"></div>
         <div id="tournament" class="tournament"></div>
-        <div id="nextRoundBtn" style="text-align: center; margin: 20px 0; display: none;">
+        <div id="nextRoundBtn" style="text-align: center; margin: 30px 0; display: none;">
             <button onclick="generateNextRound()">Generate Next Round</button>
         </div>
         <div id="champion" class="champion" style="display: none;"></div>
     </div>
 
-    <!-- Match Update Modal -->
+    <!-- Modal -->
     <div id="matchModal">
         <div class="modal-content">
             <h3>Select Winner</h3>
-            <p id="matchPlayers"></p>
+            <p id="matchPlayers" style="font-size:18px; margin:15px 0;"></p>
             <select id="winnerSelect"></select>
             <select id="tableSelect">
                 <option value="Unassigned">Unassigned</option>
@@ -271,15 +271,15 @@
         let players = []; // {name, losses: 0, byes: 0}
         let format = 'single';
         let maxLosses = 1;
-        let rounds = []; // array of round matches: [{p1, p2, winner, table}, {p1 (bye), p2: null, winner: p1, table: 'Bye'}]
-        let currentRound = -1;
+        let rounds = []; // [{p1, p2, winner, table}]
+        let currentRoundIndex = -1;
         let currentMatchIndex = -1;
 
-        // Player input handling
-        document.getElementById('nameInput').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && this.value.trim()) {
-                addPlayer(this.value.trim());
-                this.value = '';
+        // Player handling
+        document.getElementById('nameInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && e.target.value.trim()) {
+                addPlayer(e.target.value.trim());
+                e.target.value = '';
             }
         });
 
@@ -287,11 +287,10 @@
             if (playerNames.includes(name)) return alert('Player already added!');
             playerNames.push(name);
             renderPlayersList();
-            document.getElementById('nameInput').focus();
         }
 
-        function removePlayer(index) {
-            playerNames.splice(index, 1);
+        function removePlayer(i) {
+            playerNames.splice(i, 1);
             renderPlayersList();
         }
 
@@ -318,14 +317,12 @@
             format = document.getElementById('format').value;
             maxLosses = format === 'single' ? 1 : 2;
 
-            players = playerNames.map(name => ({name, losses: 0, byes: 0}));
+            players = playerNames.map(name => ({ name, losses: 0, byes: 0 }));
             rounds = [];
-            currentRound = -1;
+            currentRoundIndex = -1;
 
+            document.getElementById('standings').style.display = 'block';
             generateNextRound();
-            renderStandings();
-            renderTournament();
-            checkForChampion();
         }
 
         function getActivePlayers() {
@@ -334,123 +331,160 @@
 
         function generateNextRound() {
             const active = getActivePlayers();
-            if (active.length < 2) return checkForChampion();
-
-            // Shuffle for random pairing
-            active.sort(() => Math.random() - 0.5);
-
-            const newRound = [];
-            for (let i = 0; i < active.length - 1; i += 2) {
-                newRound.push({p1: active[i].name, p2: active[i+1].name, winner: null, table: 'Unassigned'});
+            if (active.length <= 1) {
+                checkForChampion();
+                return;
             }
 
-            // If odd, one bye
-            if (active.length % 2 === 1) {
-                // Choose player with fewest byes for fairness
-                const byeCandidates = active.sort((a, b) => a.byes - b.byes);
-                const byePlayer = byeCandidates[0];
-                newRound.push({p1: byePlayer.name, p2: null, winner: byePlayer.name, table: 'Bye'});
-                byePlayer.byes++;
+            // Random shuffle
+            const shuffled = [...active].sort(() => Math.random() - 0.5);
+
+            const newRound = [];
+            let i = 0;
+            while (i < shuffled.length - 1) {
+                newRound.push({
+                    p1: shuffled[i].name,
+                    p2: shuffled[i + 1].name,
+                    winner: null,
+                    table: 'Unassigned'
+                });
+                i += 2;
+            }
+
+            // One bye if odd number
+            if (shuffled.length % 2 === 1) {
+                // Give bye to player with fewest byes
+                active.sort((a, b) => a.byes - b.byes);
+                const byePlayer = active[0];
+                newRound.push({
+                    p1: byePlayer.name,
+                    p2: null,
+                    winner: byePlayer.name,  // Auto-win
+                    table: 'Bye'
+                });
+                byePlayer.byes += 1;
             }
 
             rounds.push(newRound);
-            currentRound = rounds.length - 1;
+            currentRoundIndex = rounds.length - 1;
 
-            renderTournament();
-            document.getElementById('nextRoundBtn').style.display = 'none';
+            renderAll();
         }
 
-        function isRoundComplete(round) {
+        function isCurrentRoundComplete() {
+            if (currentRoundIndex < 0) return true;
+            const round = rounds[currentRoundIndex];
             return round.every(m => m.winner !== null);
         }
 
-        function updateStandings() {
+        function applyMatchResults() {
             rounds.forEach(round => {
-                round.forEach(m => {
-                    if (m.winner && m.p2 !== null) { // Skip byes
-                        const winnerPlayer = players.find(p => p.name === m.winner);
-                        const loserName = m.winner === m.p1 ? m.p2 : m.p1;
-                        const loserPlayer = players.find(p => p.name === loserName);
-                        if (loserPlayer) loserPlayer.losses++;
+                round.forEach(match => {
+                    if (match.winner && match.p2 !== null) { // Only real matches give a loss
+                        const loserName = match.winner === match.p1 ? match.p2 : match.p1;
+                        const loser = players.find(p => p.name === loserName);
+                        if (loser) loser.losses += 1;
                     }
                 });
             });
         }
 
         function renderStandings() {
-            updateStandings();
-            const standingsDiv = document.getElementById('standings');
-            standingsDiv.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th><th>Byes</th></tr></table>';
-            const table = standingsDiv.querySelector('table');
-            players.sort((a, b) => a.losses - b.losses).forEach(p => {
+            applyMatchResults(); // Ensure losses are up to date
+            const div = document.getElementById('standings');
+            div.innerHTML = '<h2 style="text-align:center;">Standings</h2><table><tr><th>Player</th><th>Losses</th><th>Byes</th></tr></table>';
+            const table = div.querySelector('table');
+
+            // Sort by losses, then byes
+            [...players].sort((a, b) => a.losses - b.losses || a.byes - b.byes).forEach(p => {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td class="${p.losses >= maxLosses ? 'eliminated' : ''}">${p.name}</td><td>${p.losses}</td><td>${p.byes}</td>`;
+                const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
+                row.innerHTML = `<td class="${statusClass}">${p.name}</td><td>${p.losses}</td><td>${p.byes}</td>`;
                 table.appendChild(row);
             });
         }
 
-        function renderTournament() {
-            const tournamentDiv = document.getElementById('tournament');
-            tournamentDiv.innerHTML = '';
-            rounds.forEach((round, r) => {
+        function renderRounds() {
+            const container = document.getElementById('tournament');
+            container.innerHTML = '';
+
+            rounds.forEach((round, rIdx) => {
                 const roundDiv = document.createElement('div');
                 roundDiv.className = 'round';
-                roundDiv.innerHTML = `<h2>Round ${r + 1}</h2>`;
+                roundDiv.innerHTML = `<h2>Round ${rIdx + 1}</h2>`;
                 const matchesDiv = document.createElement('div');
                 matchesDiv.className = 'matches';
-                round.forEach((m, i) => {
+
+                round.forEach((match, mIdx) => {
                     const matchDiv = document.createElement('div');
                     matchDiv.className = 'match';
-                    if (m.winner === null && m.p2 !== null) {
-                        matchDiv.onclick = () => showModal(r, i);
+                    if (match.winner === null && match.p2 !== null) {
+                        matchDiv.classList.add('clickable');
+                        matchDiv.onclick = () => openModal(rIdx, mIdx);
                     }
-                    const p1Class = m.winner === m.p1 ? 'winner' : '';
-                    const p2Class = m.winner === m.p2 ? 'winner' : '';
-                    if (m.p2 === null) {
-                        matchDiv.innerHTML = `
-                            <div class="player ${p1Class}">${m.p1} <span class="bye">(Bye)</span></div>
-                            <div class="table-info">${m.table}</div>
+
+                    let html = '';
+                    if (match.p2 === null) {
+                        // Bye match
+                        html = `
+                            <div class="player winner">${match.p1}</div>
+                            <div class="bye">Automatic Bye Win</div>
                         `;
                     } else {
-                        matchDiv.innerHTML = `
-                            <div class="player ${p1Class}">${m.p1}</div>
-                            <div class="player ${p2Class}">${m.p2}</div>
-                            <div class="table-info">${m.table}</div>
+                        const p1Class = match.winner === match.p1 ? 'winner' : '';
+                        const p2Class = match.winner === match.p2 ? 'winner' : '';
+                        html = `
+                            <div class="player ${p1Class}">${match.p1}</div>
+                            <div class="player ${p2Class}">${match.p2}</div>
                         `;
                     }
+                    html += `<div class="table-info">${match.table}</div>`;
+                    matchDiv.innerHTML = html;
                     matchesDiv.appendChild(matchDiv);
                 });
-                roundDiv.appendChild(matchesDiv);
-                tournamentDiv.appendChild(roundDiv);
-            });
 
-            if (currentRound >= 0 && isRoundComplete(rounds[currentRound])) {
+                roundDiv.appendChild(matchesDiv);
+                container.appendChild(roundDiv);
+            });
+        }
+
+        function renderAll() {
+            renderStandings();
+            renderRounds();
+            checkForChampion();
+
+            if (isCurrentRoundComplete() && getActivePlayers().length > 1) {
                 document.getElementById('nextRoundBtn').style.display = 'block';
             } else {
                 document.getElementById('nextRoundBtn').style.display = 'none';
             }
-            renderStandings();
-            checkForChampion();
         }
 
-        function showModal(roundIdx, matchIdx) {
-            currentRound = roundIdx;
+        function checkForChampion() {
+            const active = getActivePlayers();
+            if (active.length === 1) {
+                document.getElementById('champion').textContent = `🏆 Champion: ${active[0].name} 🏆`;
+                document.getElementById('champion').style.display = 'block';
+                document.getElementById('nextRoundBtn').style.display = 'none';
+            } else {
+                document.getElementById('champion').style.display = 'none';
+            }
+        }
+
+        function openModal(roundIdx, matchIdx) {
+            currentRoundIndex = roundIdx;
             currentMatchIndex = matchIdx;
-            const m = rounds[roundIdx][matchIdx];
+            const match = rounds[roundIdx][matchIdx];
 
-            document.getElementById('matchPlayers').innerText = `${m.p1} vs ${m.p2}`;
-            const winnerSelect = document.getElementById('winnerSelect');
-            winnerSelect.innerHTML = '';
-            const opt1 = document.createElement('option');
-            opt1.value = m.p1;
-            opt1.textContent = m.p1;
-            winnerSelect.appendChild(opt1);
-            const opt2 = document.createElement('option');
-            opt2.value = m.p2;
-            opt2.textContent = m.p2;
-            winnerSelect.appendChild(opt2);
+            document.getElementById('matchPlayers').textContent = `${match.p1} vs ${match.p2}`;
 
-            document.getElementById('tableSelect').value = m.table;
+            const select = document.getElementById('winnerSelect');
+            select.innerHTML = `
+                <option value="${match.p1}">${match.p1}</option>
+                <option value="${match.p2}">${match.p2}</option>
+            `;
+
+            document.getElementById('tableSelect').value = match.table;
             document.getElementById('matchModal').style.display = 'flex';
         }
 
@@ -459,54 +493,43 @@
         }
 
         function confirmUpdate() {
-            const m = rounds[currentRound][currentMatchIndex];
-            m.winner = document.getElementById('winnerSelect').value;
-            m.table = document.getElementById('tableSelect').value;
+            const match = rounds[currentRoundIndex][currentMatchIndex];
+            match.winner = document.getElementById('winnerSelect').value;
+            match.table = document.getElementById('tableSelect').value;
             closeModal();
-            renderTournament();
-        }
-
-        function checkForChampion() {
-            const active = getActivePlayers();
-            if (active.length === 1) {
-                document.getElementById('champion').innerText = `Champion: ${active[0].name}!`;
-                document.getElementById('champion').style.display = 'block';
-                document.getElementById('nextRoundBtn').style.display = 'none';
-            } else {
-                document.getElementById('champion').style.display = 'none';
-            }
+            renderAll();
         }
 
         function saveState() {
-            localStorage.setItem('poolTournament', JSON.stringify({playerNames, format, players, rounds}));
+            localStorage.setItem('poolTournament', JSON.stringify({
+                playerNames,
+                format,
+                players,
+                rounds
+            }));
             alert('Tournament saved!');
         }
 
         function loadState() {
             const saved = localStorage.getItem('poolTournament');
-            if (saved) {
-                const data = JSON.parse(saved);
-                playerNames = data.playerNames;
-                format = data.format;
-                players = data.players;
-                rounds = data.rounds;
-                maxLosses = format === 'single' ? 1 : 2;
-                currentRound = rounds.length - 1;
-                document.getElementById('format').value = format;
-                renderPlayersList();
-                renderStandings();
-                renderTournament();
-                checkForChampion();
-                alert('Tournament loaded!');
-            } else {
-                alert('No saved tournament found.');
-            }
+            if (!saved) return alert('No saved tournament found.');
+
+            const data = JSON.parse(saved);
+            playerNames = data.playerNames || [];
+            format = data.format || 'single';
+            players = data.players || [];
+            rounds = data.rounds || [];
+            maxLosses = format === 'single' ? 1 : 2;
+            currentRoundIndex = rounds.length - 1;
+
+            document.getElementById('format').value = format;
+            renderPlayersList();
+            document.getElementById('standings').style.display = 'block';
+            renderAll();
+            alert('Tournament loaded!');
         }
 
-        // Auto-focus input on load
-        window.onload = () => {
-            document.getElementById('nameInput').focus();
-        };
+        window.onload = () => document.getElementById('nameInput').focus();
     </script>
 </body>
 </html>
