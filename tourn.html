@@ -243,12 +243,14 @@
     <div class="container">
         <h1>Pool Tournament Manager</h1>
         <p class="subtitle">Single & Double Elimination • Random Pairings • Click Name for Wins</p>
+
         <div class="setup">
             <div class="player-input">
                 <input type="text" id="nameInput" placeholder="Type player name and press Enter" autofocus>
                 <button onclick="clearPlayers()" class="secondary">Clear Players</button>
             </div>
             <div class="players-list" id="playersList"></div>
+
             <div class="controls">
                 <select id="format">
                     <option value="single">Single Elimination</option>
@@ -259,8 +261,10 @@
                 <button onclick="loadState()" class="secondary">Load Saved</button>
             </div>
         </div>
+
         <div class="main-area">
             <div id="standings" class="standings-sidebar" style="display:none;"></div>
+
             <div class="tournament-area">
                 <div id="tournament" class="tournament"></div>
                 <div id="nextRoundBtn">
