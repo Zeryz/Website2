@@ -72,11 +72,11 @@
             background: #c44;
             color: white;
             border: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            border-radius: 0;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -85,7 +85,7 @@
         }
         .player-tag button:hover {
             background: #f55;
-            transform: scale(1.2);
+            transform: scale(1.1);
         }
         .controls {
             display: flex;
@@ -400,7 +400,7 @@
         function renderStandings() {
             applyMatchResults();
             const div = document.getElementById('standings');
-            div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th><th></th></tr></table>';
+            div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th><th>Byes</th><th></th></tr></table>';
             const table = div.querySelector('table');
             [...players].sort((a, b) => a.losses - b.losses || a.name.localeCompare(b.name)).forEach(p => {
                 const row = document.createElement('tr');
@@ -408,6 +408,7 @@
                 row.innerHTML = `
                     <td class="${statusClass}">${p.name}</td>
                     <td>${p.losses}</td>
+                    <td>${p.byes}</td>
                     <td><button class="remove-btn" onclick="removeTournamentPlayer('${p.name}')">×</button></td>
                 `;
                 table.appendChild(row);
@@ -516,19 +517,19 @@
         function checkForPodium() {
             applyMatchResults();
             const active = getActivePlayers();
+            if (active.length > 1) return; // Tournament not over
+
+            const finalPlayers = [...players].sort((a, b) => a.losses - b.losses);
             const podiumDiv = document.getElementById('podium');
             podiumDiv.innerHTML = '';
             podiumDiv.style.display = 'none';
-            if (active.length > 1) return; // Only when tournament ends
 
-            const finalPlayers = [...players].sort((a, b) => a.losses - b.losses);
-            const thirdPlaceCandidates = finalPlayers.filter(p => p.losses === finalPlayers[2].losses);
-
-            if (thirdPlaceCandidates.length > 1 && !tiebreakerActive) {
+            // Check for tie at 3rd place losses
+            if (finalPlayers.length >= 4 && finalPlayers[2].losses === finalPlayers[3].losses && !tiebreakerActive) {
                 tiebreakerActive = true;
+                const tiePlayers = finalPlayers.slice(2).filter(p => p.losses === finalPlayers[2].losses);
+                const shuffledTie = tiePlayers.sort(() => Math.random() - 0.5);
                 const tieRound = [];
-                // Pair them randomly for tiebreaker matches
-                const shuffledTie = thirdPlaceCandidates.sort(() => Math.random() - 0.5);
                 for (let i = 0; i < shuffledTie.length; i += 2) {
                     if (i + 1 < shuffledTie.length) {
                         tieRound.push({
@@ -537,7 +538,6 @@
                             winner: null
                         });
                     } else {
-                        // Odd number, one gets bye
                         tieRound.push({type: 'bye', player: shuffledTie[i].name});
                     }
                 }
@@ -547,7 +547,7 @@
                 return;
             }
 
-            // Normal podium
+            // Display podium
             if (finalPlayers.length >= 1) {
                 podiumDiv.innerHTML += `<div class="first">1st Place: ${finalPlayers[0].name}</div>`;
             }
