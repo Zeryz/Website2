@@ -151,16 +151,17 @@
         }
         .eliminated { color: #c44; text-decoration: line-through; }
         .remove-btn {
-            background: none;
+            background: #c44;
+            color: white;
             border: none;
-            color: #c44;
+            padding: 4px 8px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
-            padding: 0;
-            margin-left: 5px;
+            font-size: 12px;
+            transition: background 0.2s;
         }
         .remove-btn:hover {
-            color: #f55;
+            background: #f55;
         }
 
         .tournament-area {
@@ -447,23 +448,17 @@
                     const opponent = match.p1 === name ? match.p2 : match.p1;
                     // Remove the match
                     round.splice(matchIndex, 1);
-                    // Award win to opponent if match not started
-                    if (match.winner === null) {
-                        if (byeIndex > -1) {
-                            const byePlayerName = round[byeIndex].player;
-                            round.splice(byeIndex, 1);
-                            // Add new match with bye player and opponent
-                            round.push({p1: byePlayerName, p2: opponent, winner: null});
-                            // Decrement bye count
-                            const byeP = players.find(p => p.name === byePlayerName);
-                            if (byeP) byeP.byes -= 1;
-                        } else {
-                            // No bye, opponent gets bye
-                            round.push({type: 'bye', player: opponent});
-                        }
+                    if (byeIndex > -1) {
+                        const byePlayerName = round[byeIndex].player;
+                        round.splice(byeIndex, 1);
+                        // Add new match with bye player and opponent
+                        round.push({p1: byePlayerName, p2: opponent, winner: null});
+                        // Decrement bye count
+                        const byeP = players.find(p => p.name === byePlayerName);
+                        if (byeP) byeP.byes -= 1;
                     } else {
-                        // If match had a winner, keep it as is (but since player removed, perhaps reset or handle, but to keep other games same, maybe award to opponent)
-                        // For simplicity, since winner already set, just remove match and let losses stand
+                        // No bye, opponent gets bye
+                        round.push({type: 'bye', player: opponent});
                     }
                 } else if (byeIndex > -1 && round[byeIndex].player === name) {
                     // Removed had bye, remove bye entry
@@ -471,7 +466,6 @@
                 }
             }
 
-            // Re-render
             renderAll();
         }
 
