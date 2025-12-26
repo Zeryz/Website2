@@ -60,11 +60,11 @@
         }
         .player-tag {
             background: #333;
-            padding: 8px 16px;
+            padding: 6px 12px 6px 16px;
             border-radius: 30px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             font-size: 14px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
@@ -72,20 +72,20 @@
             background: #c44;
             color: white;
             border: none;
-            width: 22px;
-            height: 22px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 11px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.2s;
         }
         .player-tag button:hover {
             background: #f55;
-            transform: scale(1.1);
+            transform: scale(1.2);
         }
         .controls {
             display: flex;
@@ -243,14 +243,12 @@
     <div class="container">
         <h1>Pool Tournament Manager</h1>
         <p class="subtitle">Single & Double Elimination • Random Pairings • Click Name for Wins</p>
-
         <div class="setup">
             <div class="player-input">
                 <input type="text" id="nameInput" placeholder="Type player name and press Enter" autofocus>
                 <button onclick="clearPlayers()" class="secondary">Clear Players</button>
             </div>
             <div class="players-list" id="playersList"></div>
-
             <div class="controls">
                 <select id="format">
                     <option value="single">Single Elimination</option>
@@ -261,10 +259,8 @@
                 <button onclick="loadState()" class="secondary">Load Saved</button>
             </div>
         </div>
-
         <div class="main-area">
             <div id="standings" class="standings-sidebar" style="display:none;"></div>
-
             <div class="tournament-area">
                 <div id="tournament" class="tournament"></div>
                 <div id="nextRoundBtn">
