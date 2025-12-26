@@ -152,6 +152,10 @@
         .match.clickable:hover {
             background: #444;
         }
+        .bye-match {
+            background: #282828;
+            opacity: 0.8;
+        }
         .player {
             padding: 10px 0;
             font-size: 18px;
@@ -159,6 +163,11 @@
         .winner {
             font-weight: bold;
             color: #4CAF50;
+        }
+        .bye {
+            color: #888;
+            font-style: italic;
+            font-size: 16px;
         }
         .table-info {
             margin-top: 15px;
@@ -267,7 +276,7 @@
         let players = []; // {name, losses: 0, byes: 0}
         let format = 'single';
         let maxLosses = 1;
-        let rounds = []; // Only real matches: [{p1, p2, winner, table}]
+        let rounds = []; // Array of round arrays, each containing match objects {p1, p2, winner, table} or {type: 'bye', player}
         let currentRoundIndex = -1;
         let currentMatchIndex = -1;
 
@@ -343,7 +352,8 @@
                 active.sort((a, b) => a.byes - b.byes);
                 byePlayer = active[0];
                 byePlayer.byes += 1;
-                shuffled.splice(shuffled.indexOf(byePlayer), 1); // Remove from pairing
+                newRound.push({type: 'bye', player: byePlayer.name}); // Add bye entry
+                shuffled.splice(shuffled.findIndex(p => p.name === byePlayer.name), 1); // Remove from pairing
             }
 
             // Create real matches
@@ -365,14 +375,17 @@
         function isCurrentRoundComplete() {
             if (currentRoundIndex < 0) return true;
             const round = rounds[currentRoundIndex];
-            return round.every(m => m.winner !== null);
+            return round.every(m => m.type === 'bye' || m.winner !== null);
         }
 
         function applyMatchResults() {
+            // Reset losses to avoid double-counting
+            players.forEach(p => p.losses = 0);
+
             rounds.forEach(round => {
-                round.forEach(match => {
-                    if (match.winner) {
-                        const loserName = match.winner === match.p1 ? match.p2 : match.p1;
+                round.forEach(item => {
+                    if (item.type !== 'bye' && item.winner) {
+                        const loserName = item.winner === item.p1 ? item.p2 : item.p1;
                         const loser = players.find(p => p.name === loserName);
                         if (loser) loser.losses += 1;
                     }
@@ -405,23 +418,29 @@
                 const matchesDiv = document.createElement('div');
                 matchesDiv.className = 'matches';
 
-                round.forEach((match, mIdx) => {
-                    const matchDiv = document.createElement('div');
-                    matchDiv.className = 'match';
-                    if (match.winner === null) {
-                        matchDiv.classList.add('clickable');
-                        matchDiv.onclick = () => openModal(rIdx, mIdx);
+                round.forEach((item, mIdx) => {
+                    const itemDiv = document.createElement('div');
+                    if (item.type === 'bye') {
+                        itemDiv.className = 'match bye-match';
+                        itemDiv.innerHTML = `
+                            <div class="player">${item.player}</div>
+                            <div class="bye">Bye this round</div>
+                        `;
+                    } else {
+                        itemDiv.className = 'match';
+                        if (item.winner === null) {
+                            itemDiv.classList.add('clickable');
+                            itemDiv.onclick = () => openModal(rIdx, mIdx);
+                        }
+                        const p1Class = item.winner === item.p1 ? 'winner' : '';
+                        const p2Class = item.winner === item.p2 ? 'winner' : '';
+                        itemDiv.innerHTML = `
+                            <div class="player ${p1Class}">${item.p1}</div>
+                            <div class="player ${p2Class}">${item.p2}</div>
+                            <div class="table-info">${item.table}</div>
+                        `;
                     }
-
-                    const p1Class = match.winner === match.p1 ? 'winner' : '';
-                    const p2Class = match.winner === match.p2 ? 'winner' : '';
-
-                    matchDiv.innerHTML = `
-                        <div class="player ${p1Class}">${match.p1}</div>
-                        <div class="player ${p2Class}">${match.p2}</div>
-                        <div class="table-info">${match.table}</div>
-                    `;
-                    matchesDiv.appendChild(matchDiv);
+                    matchesDiv.appendChild(itemDiv);
                 });
 
                 roundDiv.appendChild(matchesDiv);
