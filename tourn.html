@@ -72,11 +72,11 @@
             background: #c44;
             color: white;
             border: none;
-            width: 22px;
-            height: 22px;
-            border-radius: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 11px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -85,7 +85,7 @@
         }
         .player-tag button:hover {
             background: #f55;
-            transform: scale(1.1);
+            transform: scale(1.2);
         }
         .controls {
             display: flex;
@@ -154,15 +154,10 @@
             background: #c44;
             color: white;
             border: none;
-            width: 22px;
-            height: 22px;
-            border-radius: 0;
+            padding: 4px 8px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 12px;
             transition: background 0.2s;
         }
         .remove-btn:hover {
@@ -260,6 +255,13 @@
         .podium div {
             margin: 10px 0;
         }
+        .tiebreaker-note {
+            font-size: 18px;
+            color: #ff9900;
+            font-style: italic;
+            text-align: center;
+            margin: 20px 0;
+        }
 
         #nextRoundBtn {
             text-align: center;
@@ -311,6 +313,7 @@
         let maxLosses = 1;
         let rounds = []; // Array of round arrays: match {p1, p2, winner} or {type: 'bye', player}
         let currentRoundIndex = -1;
+        let tiebreakerActive = false;
 
         // Player handling
         document.getElementById('nameInput').addEventListener('keydown', e => {
@@ -357,6 +360,7 @@
             players = playerNames.map(name => ({ name, losses: 0, byes: 0 }));
             rounds = [];
             currentRoundIndex = -1;
+            tiebreakerActive = false;
 
             document.getElementById('standings').style.display = 'block';
             generateNextRound();
@@ -483,9 +487,13 @@
             container.innerHTML = '';
 
             rounds.forEach((round, rIdx) => {
+                let roundTitle = `Round ${rIdx + 1}`;
+                if (tiebreakerActive && rIdx === rounds.length - 1) {
+                    roundTitle = '3rd Place Tiebreaker Match';
+                }
                 const roundDiv = document.createElement('div');
                 roundDiv.className = 'round';
-                roundDiv.innerHTML = `<h2>Round ${rIdx + 1}</h2>`;
+                roundDiv.innerHTML = `<h2>${roundTitle}</h2>`;
                 const matchesDiv = document.createElement('div');
                 matchesDiv.className = 'matches';
 
@@ -553,8 +561,8 @@
         }
 
         function checkForPodium() {
-            applyMatchResults(); // Ensure losses are up to date
-            const finalPlayers = [...players].sort((a, b) => a.losses - b.losses || a.name.localeCompare(b.name));
+            applyMatchResults();
+            const finalPlayers = [...players].sort((a, b) => a.losses - b.losses);
 
             const podiumDiv = document.getElementById('podium');
             podiumDiv.innerHTML = '';
@@ -563,6 +571,23 @@
             if (finalPlayers.length >= 1) {
                 podiumDiv.innerHTML += `<div class="first">1st Place: ${finalPlayers[0].name}</div>`;
             }
+
+            // Check for 3rd place tie
+            if (finalPlayers.length >= 4 && finalPlayers[2].losses === finalPlayers[3].losses && !tiebreakerActive) {
+                // Trigger tiebreaker
+                tiebreakerActive = true;
+                const tiePlayers = [finalPlayers[2].name, finalPlayers[3].name];
+                const tieRound = [{
+                    p1: tiePlayers[0],
+                    p2: tiePlayers[1],
+                    winner: null
+                }];
+                rounds.push(tieRound);
+                currentRoundIndex = rounds.length - 1;
+                renderAll();
+                return;
+            }
+
             if (finalPlayers.length >= 2) {
                 podiumDiv.innerHTML += `<div class="second">2nd Place: ${finalPlayers[1].name}</div>`;
             }
@@ -581,7 +606,8 @@
                 playerNames,
                 format,
                 players,
-                rounds
+                rounds,
+                tiebreakerActive
             }));
             alert('Tournament progress saved!');
         }
@@ -595,6 +621,7 @@
             format = data.format || 'single';
             players = data.players || [];
             rounds = data.rounds || [];
+            tiebreakerActive = data.tiebreakerActive || false;
             maxLosses = format === 'single' ? 1 : 2;
             currentRoundIndex = rounds.length - 1;
 
