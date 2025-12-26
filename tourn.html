@@ -5,19 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pool Tournament Manager</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
-            background: #1a1a1a; 
-            color: #eee; 
-            margin: 0; 
-            padding: 20px; 
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1a1a1a;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
-        .container { 
-            max-width: 1600px; 
-            margin: auto; 
+        .container {
+            max-width: 1600px;
+            margin: auto;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -25,7 +25,7 @@
         }
         h1 { text-align: center; color: #4CAF50; margin-bottom: 10px; }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
-        
+       
         .setup {
             background: #222;
             padding: 20px;
@@ -72,11 +72,11 @@
             background: #c44;
             color: white;
             border: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            border-radius: 0;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -85,7 +85,7 @@
         }
         .player-tag button:hover {
             background: #f55;
-            transform: scale(1.2);
+            transform: scale(1.1);
         }
         .controls {
             display: flex;
@@ -117,7 +117,6 @@
         button.secondary:hover {
             background: #666;
         }
-
         .main-area {
             display: flex;
             gap: 30px;
@@ -154,10 +153,15 @@
             background: #c44;
             color: white;
             border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
+            width: 22px;
+            height: 22px;
+            border-radius: 0;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: background 0.2s;
         }
         .remove-btn:hover {
