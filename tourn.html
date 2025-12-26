@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -341,22 +342,25 @@
                 return;
             }
 
-            // Random shuffle
+            // Random shuffle for pairings
             const shuffled = [...active].sort(() => Math.random() - 0.5);
 
             const newRound = [];
             let byePlayer = null;
 
-            // If odd number, give bye to player with fewest byes
+            // If odd number, give bye to random player with min byes
             if (shuffled.length % 2 === 1) {
-                active.sort((a, b) => a.byes - b.byes);
-                byePlayer = active[0];
+                const minByes = Math.min(...active.map(p => p.byes));
+                const candidates = active.filter(p => p.byes === minByes);
+                byePlayer = candidates[Math.floor(Math.random() * candidates.length)];
                 byePlayer.byes += 1;
                 newRound.push({type: 'bye', player: byePlayer.name}); // Add bye entry
-                shuffled.splice(shuffled.findIndex(p => p.name === byePlayer.name), 1); // Remove from pairing
+                // Remove from shuffled
+                const index = shuffled.findIndex(p => p.name === byePlayer.name);
+                if (index > -1) shuffled.splice(index, 1);
             }
 
-            // Create real matches
+            // Create real matches from shuffled
             for (let i = 0; i < shuffled.length; i += 2) {
                 newRound.push({
                     p1: shuffled[i].name,
@@ -375,11 +379,11 @@
         function isCurrentRoundComplete() {
             if (currentRoundIndex < 0) return true;
             const round = rounds[currentRoundIndex];
-            return round.every(m => m.type === 'bye' || m.winner !== null);
+            return round.every(item => item.type === 'bye' || item.winner !== null);
         }
 
         function applyMatchResults() {
-            // Reset losses to avoid double-counting
+            // Reset losses to avoid double-counting on reload/render
             players.forEach(p => p.losses = 0);
 
             rounds.forEach(round => {
@@ -533,3 +537,4 @@
     </script>
 </body>
 </html>
+```
