@@ -150,6 +150,18 @@
             border-bottom: 1px solid #444;
         }
         .eliminated { color: #c44; text-decoration: line-through; }
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #c44;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0;
+            margin-left: 5px;
+        }
+        .remove-btn:hover {
+            color: #f55;
+        }
 
         .tournament-area {
             flex: 1;
@@ -396,15 +408,64 @@
         function renderStandings() {
             applyMatchResults();
             const div = document.getElementById('standings');
-            div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th></tr></table>';
+            div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th><th></th></tr></table>'; // Added empty th for remove button
             const table = div.querySelector('table');
 
             [...players].sort((a, b) => a.losses - b.losses || a.name.localeCompare(b.name)).forEach(p => {
                 const row = document.createElement('tr');
                 const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
-                row.innerHTML = `<td class="${statusClass}">${p.name}</td><td>${p.losses}</td>`;
+                row.innerHTML = `
+                    <td class="${statusClass}">${p.name}</td>
+                    <td>${p.losses}</td>
+                    <td><button class="remove-btn" onclick="removeTournamentPlayer('${p.name}')">×</button></td>
+                `;
                 table.appendChild(row);
             });
+        }
+
+        function removeTournamentPlayer(name) {
+            const player = players.find(p => p.name === name);
+            if (!player) return;
+
+            let message = `Remove ${name}?`;
+            if (player.losses < maxLosses) {
+                message = `You're about to remove an active player ${name}. Continue?`;
+            }
+            if (!confirm(message)) return;
+
+            // Remove from players
+            players = players.filter(p => p.name !== name);
+
+            // Adjust current round if ongoing and not complete
+            if (currentRoundIndex >= 0 && !isCurrentRoundComplete()) {
+                let round = rounds[currentRoundIndex];
+                let byeIndex = round.findIndex(item => item.type === 'bye');
+                let matchIndex = round.findIndex(item => item.type !== 'bye' && (item.p1 === name || item.p2 === name));
+
+                if (matchIndex > -1) {
+                    const match = round[matchIndex];
+                    const opponent = match.p1 === name ? match.p2 : match.p1;
+                    // Remove the match
+                    round.splice(matchIndex, 1);
+                    if (byeIndex > -1) {
+                        const byePlayerName = round[byeIndex].player;
+                        round.splice(byeIndex, 1);
+                        // Add new match with bye player and opponent
+                        round.push({p1: byePlayerName, p2: opponent, winner: null});
+                        // Decrement bye count since bye is canceled
+                        const byeP = players.find(p => p.name === byePlayerName);
+                        if (byeP) byeP.byes -= 1;
+                    } else {
+                        // No bye, give opponent a bye
+                        round.push({type: 'bye', player: opponent});
+                    }
+                } else if (byeIndex > -1 && round[byeIndex].player === name) {
+                    // Removed had bye, remove bye entry
+                    round.splice(byeIndex, 1);
+                }
+            }
+
+            renderAll();
         }
 
         function renderRounds() {
