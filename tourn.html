@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pool Tournament Manager</title>
+    <!-- CSS for layout, colors, and responsive design -->
     <style>
         body { 
             font-family: 'Segoe UI', Arial, sans-serif; 
@@ -72,11 +73,11 @@
             background: #c44;
             color: white;
             border: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
+            width: 23px;
+            height: 23px;
+            border-radius: 0;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -85,7 +86,7 @@
         }
         .player-tag button:hover {
             background: #f55;
-            transform: scale(1.2);
+            transform: scale(1.1);
         }
         .controls {
             display: flex;
@@ -108,7 +109,7 @@
             background: #4CAF50;
             color: white;
             cursor: pointer;
-            min-width: 120px;
+            min-width: 23px;
         }
         button:hover { background: #45a049; }
         button.secondary {
@@ -154,15 +155,21 @@
             background: #c44;
             color: white;
             border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
+            width: 23px;
+            height: 23px;
+            border-radius: 0;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: background 0.2s;
         }
         .remove-btn:hover {
             background: #f55;
         }
+
         .tournament-area {
             flex: 1;
             overflow-y: auto;
@@ -393,7 +400,11 @@
             const div = document.getElementById('standings');
             div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th><th>Byes</th><th></th></tr></table>';
             const table = div.querySelector('table');
-            [...players].sort((a, b) => a.losses - b.losses || a.name.localeCompare(b.name)).forEach(p => {
+            let standingsPlayers = [...players].sort((a, b) => a.losses - b.losses || Math.random() - 0.5); // Random tiebreaker for same losses
+            if (!tiebreakerActive) {
+                standingsPlayers = standingsPlayers.filter(p => p.losses < maxLosses); // Hide eliminated except during tiebreaker
+            }
+            standingsPlayers.forEach(p => {
                 const row = document.createElement('tr');
                 const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
                 row.innerHTML = `
