@@ -242,7 +242,7 @@
 <body>
     <div class="container">
         <h1>Pool Tournament Manager</h1>
-        <p class="subtitle">Single & Double Elimination • Random Pairings • Click Name to Win</p>
+        <p class="subtitle">Single & Double Elimination • Random Pairings • Click Name for Wins</p>
 
         <div class="setup">
             <div class="player-input">
@@ -484,7 +484,7 @@
         function checkForChampion() {
             const active = getActivePlayers();
             if (active.length === 1) {
-                document.getElementById('champion').textContent = `🏆 Champion: ${active[0].name} 🏆`;
+                document.getElementById('champion').textContent = `🏆 Winner: ${active[0].name} 🏆`;
                 document.getElementById('champion').style.display = 'block';
                 document.getElementById('nextRoundBtn').style.display = 'none';
             } else {
