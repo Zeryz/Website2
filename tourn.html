@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pool Tournament Manager</title>
-    <!-- CSS for dark theme, responsive layout, and component styling -->
     <style>
         body { 
             font-family: 'Segoe UI', Arial, sans-serif; 
@@ -73,11 +72,11 @@
             background: #c44;
             color: white;
             border: none;
-            width: 23px;
-            height: 23px;
-            border-radius: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 11px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -86,7 +85,7 @@
         }
         .player-tag button:hover {
             background: #f55;
-            transform: scale(1.1);
+            transform: scale(1.2);
         }
         .controls {
             display: flex;
@@ -109,7 +108,7 @@
             background: #4CAF50;
             color: white;
             cursor: pointer;
-            min-width: 23px;
+            min-width: 20px;
         }
         button:hover { background: #45a049; }
         button.secondary {
@@ -125,9 +124,9 @@
             flex: 1;
         }
         .standings-sidebar {
-            width: 220px; /* Thinned from 300px */
+            width: 250px; /* Thinned */
             background: #222;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             align-self: start;
@@ -135,7 +134,7 @@
             top: 20px;
             max-height: calc(100vh - 200px);
             overflow-y: auto;
-            order: -1; /* Moved to left side explicitly */
+            order: -1; /* Explicitly on left */
         }
         .standings-sidebar h2 {
             text-align: center;
@@ -156,21 +155,15 @@
             background: #c44;
             color: white;
             border: none;
-            width: 23px;
-            height: 23px;
-            border-radius: 0;
+            padding: 4px 8px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 12px;
             transition: background 0.2s;
         }
         .remove-btn:hover {
             background: #f55;
         }
-
         .tournament-area {
             flex: 1;
             overflow-y: auto;
@@ -206,7 +199,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            font-size: 16px; /* Increased for visibility */
+            font-size: 16px; /* Increased visibility */
         }
         .match.clickable {
             cursor: pointer;
@@ -225,7 +218,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             cursor: pointer;
-            font-size: 16px; /* Increased for visibility */
+            font-size: 16px; /* Increased visibility */
         }
         .player-line:hover {
             background: rgba(76, 175, 80, 0.2);
@@ -267,12 +260,10 @@
     </style>
 </head>
 <body>
-    <!-- Container for header and setup -->
     <div class="container">
         <h1>Pool Tournament Manager</h1>
         <p class="subtitle">Single & Double Elimination • Random Pairings • Click Name for Wins</p>
 
-        <!-- Player entry section -->
         <div class="setup">
             <div class="player-input">
                 <input type="text" id="nameInput" placeholder="Type player name and press Enter" autofocus>
@@ -280,7 +271,6 @@
             </div>
             <div class="players-list" id="playersList"></div>
 
-            <!-- Tournament controls -->
             <div class="controls">
                 <select id="format">
                     <option value="single">Single Elimination</option>
@@ -292,7 +282,6 @@
             </div>
         </div>
 
-        <!-- Main tournament display with standings and rounds -->
         <div class="main-area">
             <div id="standings" class="standings-sidebar" style="display:none;"></div>
 
@@ -307,16 +296,14 @@
     </div>
 
     <script>
-        // Global state variables
         let playerNames = [];
         let players = []; // {name, losses: 0, byes: 0}
         let format = 'single';
         let maxLosses = 1;
-        let rounds = []; // Rounds with matches or byes
+        let rounds = []; // Array of round arrays: match {p1, p2, winner} or {type: 'bye', player}
         let currentRoundIndex = -1;
         let tiebreakerActive = false;
-
-        // Player entry handlers
+        // Player handling
         document.getElementById('nameInput').addEventListener('keydown', e => {
             if (e.key === 'Enter' && e.target.value.trim()) {
                 addPlayer(e.target.value.trim());
@@ -344,12 +331,10 @@
             playerNames.forEach((p, i) => {
                 const tag = document.createElement('div');
                 tag.className = 'player-tag';
-                tag.innerHTML = `${p} <button onclick="removePlayer(${i})">×</button>`;
+                tag.innerHTML = `\( {p} <button onclick="removePlayer( \){i})">×</button>`;
                 list.appendChild(tag);
             });
         }
-
-        // Tournament start
         function startTournament() {
             if (playerNames.length < 2) return alert('Add at least 2 players!');
             format = document.getElementById('format').value;
@@ -361,13 +346,9 @@
             document.getElementById('standings').style.display = 'block';
             generateNextRound();
         }
-
-        // Active players getter
         function getActivePlayers() {
             return players.filter(p => p.losses < maxLosses);
         }
-
-        // Round generation with random pairing
         function generateNextRound() {
             let active = getActivePlayers();
             if (active.length <= 1) {
@@ -397,15 +378,11 @@
             currentRoundIndex = rounds.length - 1;
             renderAll();
         }
-
-        // Check if round is complete
         function isCurrentRoundComplete() {
             if (currentRoundIndex < 0) return true;
             const round = rounds[currentRoundIndex];
             return round.every(item => item.type === 'bye' || item.winner !== null);
         }
-
-        // Update losses from match results
         function applyMatchResults() {
             players.forEach(p => p.losses = 0);
             rounds.forEach(round => {
@@ -418,8 +395,6 @@
                 });
             });
         }
-
-        // Render standings table
         function renderStandings() {
             applyMatchResults();
             const div = document.getElementById('standings');
@@ -433,7 +408,7 @@
                 const row = document.createElement('tr');
                 const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
                 row.innerHTML = `
-                    <td class="${statusClass}">${p.name}</td>
+                    <td class="\( {statusClass}"> \){p.name}</td>
                     <td>${p.losses}</td>
                     <td>${p.byes}</td>
                     <td><button class="remove-btn" onclick="removeTournamentPlayer('${p.name}')">×</button></td>
@@ -441,8 +416,6 @@
                 table.appendChild(row);
             });
         }
-
-        // Remove player during tournament
         function removeTournamentPlayer(name) {
             const player = players.find(p => p.name === name);
             if (!player) return;
@@ -475,8 +448,6 @@
             }
             renderAll();
         }
-
-        // Render rounds and matches
         function renderRounds() {
             const container = document.getElementById('tournament');
             container.innerHTML = '';
@@ -535,8 +506,6 @@
                 container.appendChild(roundDiv);
             });
         }
-
-        // Render all elements
         function renderAll() {
             renderStandings();
             renderRounds();
@@ -547,8 +516,6 @@
                 document.getElementById('nextRoundBtn').style.display = 'none';
             }
         }
-
-        // Check for tournament end and podium
         function checkForPodium() {
             applyMatchResults();
             const active = getActivePlayers();
@@ -586,8 +553,6 @@
             podiumDiv.style.display = 'block';
             document.getElementById('nextRoundBtn').style.display = 'none';
         }
-
-        // Save tournament state
         function saveState() {
             localStorage.setItem('poolTournament', JSON.stringify({
                 playerNames,
@@ -598,8 +563,6 @@
             }));
             alert('Tournament progress saved!');
         }
-
-        // Load tournament state
         function loadState() {
             const saved = localStorage.getItem('poolTournament');
             if (!saved) return alert('No saved tournament found.');
