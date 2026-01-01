@@ -381,7 +381,7 @@
             playerNames.forEach((p, i) => {
                 const tag = document.createElement('div');
                 tag.className = 'player-tag';
-                tag.innerHTML = `${p} <button onclick="removePlayer(${i})">×</button>`;
+                tag.innerHTML = `\( {p} <button onclick="removePlayer( \){i})">×</button>`;
                 list.appendChild(tag);
             });
         }
@@ -476,7 +476,8 @@
                 p.losses = 0;
                 p.wins = 0;
             });
-            rounds.forEach(round => {
+            rounds.forEach((round, roundIdx) => {
+                if (tiebreakerActive && roundIdx === rounds.length - 1) return; // Skip adding wins/losses for tiebreaker round
                 round.forEach(item => {
                     if (item.type !== 'bye' && item.winner) {
                         const winnerP = players.find(p => p.name === item.winner);
@@ -501,7 +502,7 @@
                 const row = document.createElement('tr');
                 const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
                 row.innerHTML = `
-                    <td class="${statusClass}">${p.name}</td>
+                    <td class="\( {statusClass}"> \){p.name}</td>
                     <td>${p.losses}</td>
                     <td>${p.wins}</td>
                     <td>${p.byes}</td>
@@ -616,30 +617,16 @@
         function checkForPodium() {
             applyMatchResults();
             const active = getActivePlayers();
-            if (active.length <= 1) { // Tournament over
-                const finalPlayers = [...players].sort((a, b) => a.losses - b.losses || b.wins - a.wins || Math.random() - 0.5);
-                const podiumDiv = document.getElementById('podium');
-                podiumDiv.innerHTML = '';
-                podiumDiv.style.display = 'none';
+            if (active.length > 1) return; // Tournament not over
 
-                if (finalPlayers.length >= 1) {
-                    podiumDiv.innerHTML += `<div>1st Place: ${finalPlayers[0].name}</div>`;
-                }
-                if (finalPlayers.length >= 2) {
-                    podiumDiv.innerHTML += `<div>2nd Place: ${finalPlayers[1].name}</div>`;
-                }
-                if (finalPlayers.length >= 3) {
-                    podiumDiv.innerHTML += `<div>3rd Place: ${finalPlayers[2].name}</div>`;
-                }
-                if (finalPlayers.length >= 4) {
-                    podiumDiv.innerHTML += `<div>4th Place: ${finalPlayers[3].name}</div>`;
-                }
-                podiumDiv.style.display = 'block';
-                document.getElementById('nextRoundBtn').style.display = 'none';
-            } else if (active.length === 2 && !tiebreakerActive && rounds.length > 0) {
-                const lastRound = rounds[rounds.length - 1];
+            const podiumDiv = document.getElementById('podium');
+            podiumDiv.innerHTML = '';
+            podiumDiv.style.display = 'none';
+
+            if (!tiebreakerActive && rounds.length >= 2) {
+                const prevRound = rounds[rounds.length - 2];
                 const losers = [];
-                lastRound.forEach(item => {
+                prevRound.forEach(item => {
                     if (item.type !== 'bye' && item.winner) {
                         const loserName = item.winner === item.p1 ? item.p2 : item.p1;
                         losers.push(loserName);
@@ -659,6 +646,30 @@
                     return;
                 }
             }
+
+            // Display podium with explicit placements
+            const finalRound = tiebreakerActive ? rounds[rounds.length - 2] : rounds[rounds.length - 1];
+            const finalMatch = finalRound.find(item => item.type !== 'bye');
+            if (finalMatch && finalMatch.winner) {
+                const first = finalMatch.winner;
+                const second = finalMatch.winner === finalMatch.p1 ? finalMatch.p2 : finalMatch.p1;
+                podiumDiv.innerHTML += `<div>1st Place: ${first}</div>`;
+                podiumDiv.innerHTML += `<div>2nd Place: ${second}</div>`;
+            }
+
+            if (tiebreakerActive) {
+                const tieRound = rounds[rounds.length - 1];
+                const tieMatch = tieRound.find(item => item.type !== 'bye');
+                if (tieMatch && tieMatch.winner) {
+                    const third = tieMatch.winner;
+                    const fourth = tieMatch.winner === tieMatch.p1 ? tieMatch.p2 : tieMatch.p1;
+                    podiumDiv.innerHTML += `<div>3rd Place: ${third}</div>`;
+                    podiumDiv.innerHTML += `<div>4th Place: ${fourth}</div>`;
+                }
+            }
+
+            podiumDiv.style.display = 'block';
+            document.getElementById('nextRoundBtn').style.display = 'none';
         }
         function saveState() {
             localStorage.setItem('poolTournament', JSON.stringify({
