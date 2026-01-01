@@ -23,7 +23,20 @@
             flex-direction: column;
             gap: 20px;
         }
-        h1 { text-align: center; color: #4CAF50; margin-bottom: 10px; }
+        header { text-align: center; margin-bottom: 10px; }
+        h1 { color: #4CAF50; margin: 0; display: inline; }
+        .instructions-link {
+            margin-left: 20px;
+            font-size: 16px;
+        }
+        .instructions-link a {
+            color: #aaa;
+            text-decoration: none;
+        }
+        .instructions-link a:hover {
+            color: #4CAF50;
+            text-decoration: underline;
+        }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
        
         .setup {
@@ -124,7 +137,7 @@
         }
         /* Wider standings sidebar for better column spacing */
         .standings-sidebar {
-            width: 320px; /* Increased from 250px */
+            width: 320px;
             background: #222;
             padding: 20px;
             border-radius: 10px;
@@ -164,7 +177,7 @@
         .standings-sidebar td:nth-child(3),
         .standings-sidebar th:nth-child(4),
         .standings-sidebar td:nth-child(4) {
-            text-align: center; /* Center Wins, Losses, Byes */
+            text-align: center;
             width: 50px;
         }
         .standings-sidebar th:last-child,
@@ -287,7 +300,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>Pool Tournament Manager</h1>
+        <header>
+            <h1>Pool Tournament Manager</h1>
+            <span class="instructions-link"><a href="instructions.html">Instructions</a></span>
+        </header>
         <p class="subtitle">Single & Double Elimination • Random Pairings • Click Name for Wins</p>
         <div class="setup">
             <div class="player-input" id="preStartInput">
@@ -317,7 +333,7 @@
         </div>
     </div>
 
-    <script>
+      <script>
         let playerNames = [];
         let players = []; // {name, losses: 0, byes: 0, wins: 0}
         let format = 'single';
