@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructions - Pool Tournament Manager</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: #1a1a1a; 
+            color: #eee; 
+            margin: 0; 
+            padding: 40px; 
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #222;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        h1 { color: #4CAF50; text-align: center; }
+        h2 { color: #4CAF50; margin-top: 30px; }
+        ul { padding-left: 20px; }
+        a { color: #4CAF50; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back { text-align: center; margin-top: 40px; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pool Tournament Manager - Instructions</h1>
+        
+        <h2>Before Starting</h2>
+        <ul>
+            <li>Type player names in the input field and press Enter to add them.</li>
+            <li>Remove players before starting by clicking the × on their tag.</li>
+            <li>Choose Single or Double Elimination from the dropdown.</li>
+            <li>Click "Start Tournament" when ready (at least 2 players required).</li>
+        </ul>
+
+        <h2>During the Tournament</h2>
+        <ul>
+            <li>Click a player's name in a match to declare them the winner.</li>
+            <li>The winner is highlighted in green.</li>
+            <li>Once all matches in a round are complete, click "Generate Next Round".</li>
+            <li>Add late players anytime using the "Add Late Player" button.</li>
+            <li>Remove players from standings if needed (with confirmation).</li>
+            <li>Progress is automatically saved in your browser.</li>
+        </ul>
+
+        <h2>End of Tournament</h2>
+        <ul>
+            <li>When down to 2 players, the final match determines 1st and 2nd.</li>
+            <li>A 3rd Place Match is automatically created between the two semi-final losers.</li>
+            <li>Final placements (1st-4th) are shown on the podium.</li>
+        </ul>
+
+        <h2>Tips</h2>
+        <ul>
+            <li>Pairings are random but avoid rematches when possible.</li>
+            <li>Byes are balanced fairly.</li>
+            <li>Use "Load Saved" to resume a previous tournament.</li>
+        </ul>
+
+        <div class="back">
+            <a href="index.html">← Back to Tournament Manager</a>
+        </div>
+    </div>
+</body>
+</html>
