@@ -381,7 +381,7 @@
             playerNames.forEach((p, i) => {
                 const tag = document.createElement('div');
                 tag.className = 'player-tag';
-                tag.innerHTML = `\( {p} <button onclick="removePlayer( \){i})">×</button>`;
+                tag.innerHTML = `${p} <button onclick="removePlayer(${i})">×</button>`;
                 list.appendChild(tag);
             });
         }
@@ -502,7 +502,7 @@
                 const row = document.createElement('tr');
                 const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
                 row.innerHTML = `
-                    <td class="\( {statusClass}"> \){p.name}</td>
+                    <td class="${statusClass}">${p.name}</td>
                     <td>${p.losses}</td>
                     <td>${p.wins}</td>
                     <td>${p.byes}</td>
