@@ -5,19 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pool Tournament Manager</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
-            background: #1a1a1a; 
-            color: #eee; 
-            margin: 0; 
-            padding: 20px; 
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1a1a1a;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
-        .container { 
-            max-width: 1600px; 
-            margin: auto; 
+        .container {
+            max-width: 1600px;
+            margin: auto;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -25,7 +25,7 @@
         }
         h1 { text-align: center; color: #4CAF50; margin-bottom: 10px; }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
-        
+       
         .setup {
             background: #222;
             padding: 20px;
@@ -117,16 +117,16 @@
         button.secondary:hover {
             background: #666;
         }
-
         .main-area {
             display: flex;
             gap: 30px;
             flex: 1;
         }
+        /* Wider standings sidebar for better column spacing */
         .standings-sidebar {
-            width: 250px;
+            width: 320px; /* Increased from 250px */
             background: #222;
-            padding: 15px;
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             align-self: start;
@@ -139,18 +139,43 @@
         .standings-sidebar h2 {
             text-align: center;
             margin-top: 0;
+            margin-bottom: 15px;
             color: #4CAF50;
+            font-size: 20px;
         }
         .standings-sidebar table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 15px;
         }
-        .standings-sidebar th, .standings-sidebar td {
-            padding: 8px;
+        .standings-sidebar th {
             text-align: left;
+            padding: 10px 8px;
+            border-bottom: 2px solid #444;
+            color: #aaa;
+        }
+        .standings-sidebar td {
+            padding: 10px 8px;
             border-bottom: 1px solid #444;
         }
-        .eliminated { color: #c44; text-decoration: line-through; }
+        .standings-sidebar th:nth-child(2),
+        .standings-sidebar td:nth-child(2),
+        .standings-sidebar th:nth-child(3),
+        .standings-sidebar td:nth-child(3),
+        .standings-sidebar th:nth-child(4),
+        .standings-sidebar td:nth-child(4) {
+            text-align: center; /* Center Wins, Losses, Byes */
+            width: 50px;
+        }
+        .standings-sidebar th:last-child,
+        .standings-sidebar td:last-child {
+            text-align: right;
+            width: 40px;
+        }
+        .eliminated { 
+            color: #c44; 
+            text-decoration: line-through; 
+        }
         .remove-btn {
             background: #c44;
             color: white;
@@ -175,58 +200,42 @@
         }
         .round {
             background: #222;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         .round h2 {
-            margin: 0 0 15px 0;
+            margin: 0 0 10px 0;
             color: #4CAF50;
             text-align: center;
-            font-size: 22px;
+            font-size: 20px;
         }
-        /* 5 matches per row, 200px minimum width */
+        /* Matches layout: max 5 per row */
         .matches {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 16px;
-            max-width: 1100px;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            max-width: 1000px;
             margin: 0 auto;
         }
-        @media (max-width: 1200px) {
+        @media (min-width: 1000px) {
             .matches {
-                grid-template-columns: repeat(4, 1fr);
+                grid-template-columns: repeat(5, 1fr);
             }
         }
-        @media (max-width: 900px) {
-            .matches {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-        @media (max-width: 650px) {
-            .matches {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-        @media (max-width: 450px) {
-            .matches {
-                grid-template-columns: 1fr;
-            }
-        }
-
         .match {
             background: #333;
-            padding: 16px 12px;
-            border-radius: 8px;
+            padding: 10px;
+            border-radius: 6px;
             text-align: center;
-            min-height: 110px;
-            min-width: 200px;
+            min-height: 90px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            font-size: 17px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            transition: background 0.2s;
+            font-size: 16px;
+        }
+        .match.clickable {
+            cursor: pointer;
         }
         .match.clickable:hover {
             background: #444;
@@ -236,20 +245,21 @@
             opacity: 0.9;
         }
         .player-line {
-            padding: 6px 0;
-            line-height: 1.4;
+            padding: 4px 0;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             cursor: pointer;
-            transition: background 0.2s;
+            font-size: 16px;
         }
         .player-line:hover {
             background: rgba(76, 175, 80, 0.2);
-            border-radius: 4px;
         }
         .vs {
-            font-size: 15px;
+            font-size: 14px;
             color: #888;
             margin: 4px 0;
-            font-weight: bold;
         }
         .winner {
             font-weight: bold;
@@ -258,17 +268,19 @@
         .bye {
             color: #888;
             font-style: italic;
-            font-size: 14px;
+            font-size: 13px;
         }
         .podium {
             text-align: center;
-            margin: 60px 0;
-            font-size: 28px;
-            line-height: 1.6;
+            margin: 50px 0;
+            font-size: 24px;
+        }
+        .podium div {
+            margin: 10px 0;
         }
         #nextRoundBtn {
             text-align: center;
-            margin: 40px 0;
+            margin: 30px 0;
             display: none;
         }
     </style>
@@ -277,14 +289,12 @@
     <div class="container">
         <h1>Pool Tournament Manager</h1>
         <p class="subtitle">Single & Double Elimination • Random Pairings • Click Name for Wins</p>
-
         <div class="setup">
             <div class="player-input" id="preStartInput">
                 <input type="text" id="nameInput" placeholder="Type player name and press Enter" autofocus>
                 <button onclick="clearPlayers()" class="secondary">Clear Players</button>
             </div>
             <div class="players-list" id="playersList"></div>
-
             <div class="controls">
                 <select id="format">
                     <option value="single">Single Elimination</option>
@@ -295,10 +305,8 @@
                 <button id="addLateBtn" onclick="addLatePlayer()" class="secondary" style="display: none;">Add Late Player</button>
             </div>
         </div>
-
         <div class="main-area">
             <div id="standings" class="standings-sidebar" style="display:none;"></div>
-
             <div class="tournament-area">
                 <div id="tournament" class="tournament"></div>
                 <div id="nextRoundBtn">
@@ -314,18 +322,17 @@
         let players = []; // {name, losses: 0, byes: 0, wins: 0}
         let format = 'single';
         let maxLosses = 1;
-        let rounds = [];
+        let rounds = []; // Array of round arrays: match {p1, p2, winner} or {type: 'bye', player}
         let currentRoundIndex = -1;
         let tiebreakerActive = false;
         let tournamentStarted = false;
-
+        // Player handling
         document.getElementById('nameInput').addEventListener('keydown', e => {
             if (e.key === 'Enter' && e.target.value.trim()) {
                 addPlayer(e.target.value.trim());
                 e.target.value = '';
             }
         });
-
         function addPlayer(name) {
             if (tournamentStarted) {
                 addLatePlayer(name);
@@ -335,15 +342,18 @@
             playerNames.push(name);
             renderPlayersList();
         }
-
         function addLatePlayer(promptName = null) {
-            let name = promptName || prompt('Enter late player name:');
-            if (!name || !name.trim()) return;
-            name = name.trim();
+            let name;
+            if (promptName) {
+                name = promptName;
+            } else {
+                name = prompt('Enter late player name:');
+                if (!name || !name.trim()) return;
+                name = name.trim();
+            }
             if (players.find(p => p.name === name)) return alert('Player already added!');
             const newPlayer = { name, losses: 0, byes: 0, wins: 0 };
             players.push(newPlayer);
-
             if (currentRoundIndex >= 0 && !isCurrentRoundComplete()) {
                 let round = rounds[currentRoundIndex];
                 let byeIndex = round.findIndex(item => item.type === 'bye');
@@ -375,19 +385,16 @@
             renderAll();
             saveState();
         }
-
         function removePlayer(i) {
             playerNames.splice(i, 1);
             renderPlayersList();
         }
-
         function clearPlayers() {
             if (confirm('Clear all players?')) {
                 playerNames = [];
                 renderPlayersList();
             }
         }
-
         function renderPlayersList() {
             const list = document.getElementById('playersList');
             list.innerHTML = '';
@@ -398,7 +405,6 @@
                 list.appendChild(tag);
             });
         }
-
         function startTournament() {
             if (playerNames.length < 2) return alert('Add at least 2 players!');
             format = document.getElementById('format').value;
@@ -415,18 +421,15 @@
             document.getElementById('standings').style.display = 'block';
             generateNextRound();
         }
-
         function getActivePlayers() {
             return players.filter(p => p.losses < maxLosses);
         }
-
         function generateNextRound() {
             let active = getActivePlayers();
             if (active.length <= 1) {
                 checkForPodium();
                 return;
             }
-
             let pastMatches = new Set();
             rounds.forEach(round => {
                 round.forEach(item => {
@@ -436,7 +439,6 @@
                     }
                 });
             });
-
             const newRound = [];
             let byePlayer = null;
             let pairingActive = [...active];
@@ -448,7 +450,6 @@
                 newRound.push({type: 'bye', player: byePlayer.name});
                 pairingActive = active.filter(p => p.name !== byePlayer.name);
             }
-
             let bestShuffle = null;
             let minRematches = Infinity;
             for (let attempt = 0; attempt < 100; attempt++) {
@@ -464,7 +465,6 @@
                     if (minRematches === 0) break;
                 }
             }
-
             for (let i = 0; i < bestShuffle.length; i += 2) {
                 newRound.push({
                     p1: bestShuffle[i].name,
@@ -472,19 +472,16 @@
                     winner: null
                 });
             }
-
             rounds.push(newRound);
             currentRoundIndex = rounds.length - 1;
             renderAll();
             saveState();
         }
-
         function isCurrentRoundComplete() {
             if (currentRoundIndex < 0) return true;
             const round = rounds[currentRoundIndex];
             return round.every(item => item.type === 'bye' || item.winner !== null);
         }
-
         function applyMatchResults() {
             players.forEach(p => {
                 p.losses = 0;
@@ -503,7 +500,6 @@
                 });
             });
         }
-
         function renderStandings() {
             applyMatchResults();
             const div = document.getElementById('standings');
@@ -526,7 +522,6 @@
                 table.appendChild(row);
             });
         }
-
         function removeTournamentPlayer(name) {
             const player = players.find(p => p.name === name);
             if (!player) return;
@@ -560,7 +555,6 @@
             renderAll();
             saveState();
         }
-
         function renderRounds() {
             const container = document.getElementById('tournament');
             container.innerHTML = '';
@@ -621,7 +615,6 @@
                 container.appendChild(roundDiv);
             });
         }
-
         function renderAll() {
             renderStandings();
             renderRounds();
@@ -632,16 +625,13 @@
                 document.getElementById('nextRoundBtn').style.display = 'none';
             }
         }
-
         function checkForPodium() {
             applyMatchResults();
             const active = getActivePlayers();
             if (active.length > 1) return;
-
             const podiumDiv = document.getElementById('podium');
             podiumDiv.innerHTML = '';
             podiumDiv.style.display = 'none';
-
             if (!tiebreakerActive && rounds.length >= 2) {
                 const prevRound = rounds[rounds.length - 2];
                 const losers = [];
@@ -665,7 +655,6 @@
                     return;
                 }
             }
-
             const finalRound = tiebreakerActive ? rounds[rounds.length - 2] : rounds[rounds.length - 1];
             const finalMatch = finalRound.find(item => item.type !== 'bye');
             if (finalMatch && finalMatch.winner) {
@@ -674,7 +663,6 @@
                 podiumDiv.innerHTML += `<div>1st Place: ${first}</div>`;
                 podiumDiv.innerHTML += `<div>2nd Place: ${second}</div>`;
             }
-
             if (tiebreakerActive) {
                 const tieRound = rounds[rounds.length - 1];
                 const tieMatch = tieRound.find(item => item.type !== 'bye');
@@ -685,11 +673,9 @@
                     podiumDiv.innerHTML += `<div>4th Place: ${fourth}</div>`;
                 }
             }
-
             podiumDiv.style.display = 'block';
             document.getElementById('nextRoundBtn').style.display = 'none';
         }
-
         function saveState() {
             localStorage.setItem('poolTournament', JSON.stringify({
                 playerNames,
@@ -700,7 +686,6 @@
                 tournamentStarted
             }));
         }
-
         function loadState() {
             const saved = localStorage.getItem('poolTournament');
             if (!saved) return alert('No saved tournament found.');
@@ -725,7 +710,6 @@
             renderAll();
             alert('Tournament loaded!');
         }
-
         window.onload = () => document.getElementById('nameInput').focus();
     </script>
 </body>
