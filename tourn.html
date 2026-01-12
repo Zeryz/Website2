@@ -38,7 +38,6 @@
             text-decoration: underline;
         }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
- 
         .setup {
             background: #222;
             padding: 20px;
@@ -497,8 +496,6 @@
         function getDisplayName(source) {
             const name = resolve(source, true);
             if (name) {
-                const p = players.find(p => p.name === name);
-                if (p.losses >= maxLosses) return `Eliminated (${name})`;
                 return name;
             } else if (isTBD(source)) {
                 return 'TBD';
@@ -521,7 +518,7 @@
                         if (item.type === 'bye') {
                             const sourceName = resolve(item.source);
                             const sourceDisp = getDisplayName(item.source);
-                            if (sourceDisp.startsWith('Eliminated')) {
+                            if (sourceDisp === 'Eliminated') {
                                 toRemove.push({round, item});
                             } else if (sourceName) {
                                 freeAdvances.push({type: 'bye', player: sourceName, item});
@@ -533,12 +530,12 @@
                         const p2n = resolve(item.p2);
                         const p1Disp = getDisplayName(item.p1);
                         const p2Disp = getDisplayName(item.p2);
-                        if (p1n === null && p2n !== null && p1Disp.startsWith('Eliminated')) {
+                        if (p1n === null && p2n !== null && p1Disp === 'Eliminated') {
                             item.winner = p2n;
                             item.ignoreAuto = true;
                             freeAdvances.push({type: 'auto_win', player: p2n, item});
                             changed = true;
-                        } else if (p2n === null && p1n !== null && p2Disp.startsWith('Eliminated')) {
+                        } else if (p2n === null && p1n !== null && p2Disp === 'Eliminated') {
                             item.winner = p1n;
                             item.ignoreAuto = true;
                             freeAdvances.push({type: 'auto_win', player: p1n, item});
@@ -717,7 +714,7 @@
             rounds.forEach(round => {
                 round.forEach(item => {
                     if (item.type === 'bye') {
-                        const name = resolve(item.source);
+                        const name = resolve(item.source, true);
                         if (name) {
                             const p = players.find(p => p.name === name);
                             if (p) p.byes += 1;
@@ -817,10 +814,13 @@
                     const itemDiv = document.createElement('div');
                     if (item.type === 'bye') {
                         const playerDisp = getDisplayName(item.source);
-                        if (playerDisp.startsWith('Eliminated')) return; // Skip rendering eliminated byes
+                        if (playerDisp === 'Eliminated') return; // Skip meaningless eliminated byes
+                        const playerName = resolve(item.source, true);
+                        const playerP = players.find(p => p.name === playerName);
+                        const isElim = playerP && playerP.losses >= maxLosses;
                         itemDiv.className = 'match bye-match';
                         itemDiv.innerHTML = `
-                            <div class="player-line">${playerDisp}</div>
+                            <div class="player-line ${isElim ? 'eliminated' : ''}">${playerDisp}</div>
                             <div class="bye">Bye</div>
                         `;
                     } else {
@@ -828,13 +828,15 @@
                         const p2Disp = getDisplayName(item.p2);
                         const p1Name = resolve(item.p1, true);
                         const p2Name = resolve(item.p2, true);
+                        const p1p = players.find(p => p.name === p1Name);
+                        const p2p = players.find(p => p.name === p2Name);
+                        const isP1Elim = p1p && p1p.losses >= maxLosses;
+                        const isP2Elim = p2p && p2p.losses >= maxLosses;
                         const isP1Clickable = p1Disp !== 'TBD' && p1Name !== null;
                         const isP2Clickable = p2Disp !== 'TBD' && p2Name !== null;
                         itemDiv.className = 'match' + ((isP1Clickable || isP2Clickable) ? ' clickable' : '');
-                        let p1Class = (item.winner === p1Name ? 'winner ' : '') + 'player-line' + (isP1Clickable ? ' clickable' : '');
-                        let p2Class = (item.winner === p2Name ? 'winner ' : '') + 'player-line' + (isP2Clickable ? ' clickable' : '');
-                        if (p1Disp.startsWith('Eliminated')) p1Class += ' eliminated';
-                        if (p2Disp.startsWith('Eliminated')) p2Class += ' eliminated';
+                        let p1Class = (item.winner === p1Name ? 'winner ' : '') + 'player-line' + (isP1Elim ? ' eliminated' : '') + (isP1Clickable ? ' clickable' : '');
+                        let p2Class = (item.winner === p2Name ? 'winner ' : '') + 'player-line' + (isP2Elim ? ' eliminated' : '') + (isP2Clickable ? ' clickable' : '');
                         const p1Div = document.createElement('div');
                         p1Div.className = p1Class;
                         p1Div.textContent = p1Disp;
@@ -846,7 +848,7 @@
                                     item.ignoreAuto = false;
                                 } else {
                                     item.winner = p1Name;
-                                    item.ignoreAuto = p1Disp.startsWith('Eliminated');
+                                    item.ignoreAuto = isP1Elim;
                                 }
                                 renderAll();
                                 saveState();
@@ -866,7 +868,7 @@
                                     item.ignoreAuto = false;
                                 } else {
                                     item.winner = p2Name;
-                                    item.ignoreAuto = p2Disp.startsWith('Eliminated');
+                                    item.ignoreAuto = isP2Elim;
                                 }
                                 renderAll();
                                 saveState();
@@ -876,9 +878,7 @@
                         itemDiv.appendChild(vsDiv);
                         itemDiv.appendChild(p2Div);
                     }
-                    if (item.type !== 'bye' || !getDisplayName(item.source).startsWith('Eliminated')) {
-                        matchesDiv.appendChild(itemDiv);
-                    }
+                    matchesDiv.appendChild(itemDiv);
                 });
                 roundDiv.appendChild(matchesDiv);
                 container.appendChild(roundDiv);
