@@ -38,7 +38,7 @@
             text-decoration: underline;
         }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
-     
+    
         .setup {
             background: #222;
             padding: 20px;
@@ -363,7 +363,7 @@
             if (players.find(p => p.name === name)) return alert('Player already added!');
             const newPlayer = { name, losses: 0, byes: 0, wins: 0 };
             players.push(newPlayer);
-            if (currentRoundIndex >= 0 && !isCurrentRoundComplete()) {
+            if (currentRoundIndex >= 0 && !isRoundComplete(rounds[currentRoundIndex])) {
                 let round = rounds[currentRoundIndex];
                 let byeIndex = round.findIndex(item => item.type === 'bye');
                 if (byeIndex !== -1) {
@@ -373,9 +373,10 @@
                     round.splice(byeIndex, 1);
                     round.push({ p1: byeItem.player, p2: newPlayer.name, winner: null });
                 } else {
-                    const undecided = round.filter(item => item.type !== 'bye' && item.winner === null);
+                    const undecided = round.filter((item, index) => item.type !== 'bye' && item.winner === null && index >= 2); // Exclude first two matches
                     if (undecided.length === 0) {
-                        alert('Cannot add to current round, all matches decided. Player will join next round.');
+                        if (!confirm('Cannot add to current round without disrupting the first two matches. Add to next round instead?')) return;
+                        // If no, do nothing; if yes, player joins next round (no change needed)
                     } else {
                         const randMatch = undecided[Math.floor(Math.random() * undecided.length)];
                         const matchIndex = round.indexOf(randMatch);
@@ -449,10 +450,79 @@
             });
             return getActivePlayers().filter(p => !busy.has(p.name));
         }
-        function isCurrentRoundComplete() {
-            if (currentRoundIndex < 0) return true;
-            const round = rounds[currentRoundIndex];
+        function isRoundComplete(round) {
             return round.every(item => item.type === 'bye' || item.winner !== null);
+        }
+        function generateNextRound() {
+            let ready = getReadyPlayers();
+            if (ready.length < 2) return;
+            let undecided = [];
+            rounds.forEach(round => {
+                round.forEach(item => {
+                    if (item.type !== 'bye' && item.winner === null) {
+                        undecided.push(item);
+                    }
+                });
+            });
+            const isPartial = undecided.length > 0;
+            let pastMatches = new Set();
+            rounds.forEach(round => {
+                round.forEach(item => {
+                    if (item.type !== 'bye' && item.winner) {
+                        let pair = [item.p1, item.p2].sort().join('-');
+                        pastMatches.add(pair);
+                    }
+                });
+            });
+            const newItems = [];
+            let byePlayer = null;
+            let leftPlayer = null;
+            let pairingActive = [...ready];
+            if (ready.length % 2 === 1) {
+                if (isPartial) {
+                    // Leave one with max byes unpaired
+                    const maxByes = Math.max(...ready.map(p => p.byes));
+                    const candidates = ready.filter(p => p.byes === maxByes);
+                    leftPlayer = candidates[Math.floor(Math.random() * candidates.length)];
+                    pairingActive = ready.filter(p => p.name !== leftPlayer.name);
+                } else {
+                    // Assign bye to one with min byes
+                    const minByes = Math.min(...ready.map(p => p.byes));
+                    const candidates = ready.filter(p => p.byes === minByes);
+                    byePlayer = candidates[Math.floor(Math.random() * candidates.length)];
+                    byePlayer.byes += 1;
+                    newItems.push({type: 'bye', player: byePlayer.name});
+                    pairingActive = ready.filter(p => p.name !== byePlayer.name);
+                }
+            }
+            let bestShuffle = null;
+            let minRematches = Infinity;
+            for (let attempt = 0; attempt < 100; attempt++) {
+                const shuffled = [...pairingActive].sort(() => Math.random() - 0.5);
+                let rematches = 0;
+                for (let i = 0; i < shuffled.length; i += 2) {
+                    let pair = [shuffled[i].name, shuffled[i+1].name].sort().join('-');
+                    if (pastMatches.has(pair)) rematches++;
+                }
+                if (rematches < minRematches) {
+                    minRematches = rematches;
+                    bestShuffle = shuffled;
+                    if (minRematches === 0) break;
+                }
+            }
+            for (let i = 0; i < bestShuffle.length; i += 2) {
+                newItems.push({
+                    p1: bestShuffle[i].name,
+                    p2: bestShuffle[i + 1].name,
+                    winner: null
+                });
+            }
+            if (newItems.length > 0) {
+                rounds.push(newItems);
+                currentRoundIndex = rounds.length - 1;
+            }
+            renderAll();
+            saveState();
         }
         function applyMatchResults() {
             players.forEach(p => {
@@ -503,7 +573,7 @@
             }
             if (!confirm(message)) return;
             players = players.filter(p => p.name !== name);
-            if (currentRoundIndex >= 0 && !isCurrentRoundComplete()) {
+            if (currentRoundIndex >= 0 && !isRoundComplete(rounds[currentRoundIndex])) {
                 let round = rounds[currentRoundIndex];
                 let byeIndex = round.findIndex(item => item.type === 'bye');
                 let matchIndex = round.findIndex(item => item.type !== 'bye' && (item.p1 === name || item.p2 === name));
@@ -540,7 +610,7 @@
                 roundDiv.innerHTML = `<h2>${roundTitle}</h2>`;
                 const matchesDiv = document.createElement('div');
                 matchesDiv.className = 'matches';
-                round.forEach((item) => {
+                round.forEach((item, itemIdx) => {
                     const itemDiv = document.createElement('div');
                     if (item.type === 'bye') {
                         itemDiv.className = 'match bye-match';
@@ -550,16 +620,22 @@
                         `;
                     } else {
                         const isUndecided = item.winner === null;
-                        itemDiv.className = 'match' + (isUndecided ? ' clickable' : '');
-                        const p1Class = item.winner === item.p1 ? 'winner player-line' : 'player-line' + (isUndecided ? ' clickable' : '');
-                        const p2Class = item.winner === item.p2 ? 'winner player-line' : 'player-line' + (isUndecided ? ' clickable' : '');
+                        const isCurrentRound = rIdx === currentRoundIndex;
+                        const clickable = isCurrentRound || isUndecided;
+                        itemDiv.className = 'match' + (clickable ? ' clickable' : '');
+                        const p1Class = item.winner === item.p1 ? 'winner player-line' : 'player-line' + (clickable ? ' clickable' : '');
+                        const p2Class = item.winner === item.p2 ? 'winner player-line' : 'player-line' + (clickable ? ' clickable' : '');
                         const p1Div = document.createElement('div');
                         p1Div.className = p1Class;
                         p1Div.textContent = item.p1;
                         p1Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (item.winner === null) {
-                                item.winner = item.p1;
+                            if (clickable) {
+                                if (item.winner === item.p1) {
+                                    item.winner = null; // Undo if clicking the current winner
+                                } else {
+                                    item.winner = item.p1;
+                                }
                                 renderAll();
                                 saveState();
                             }
@@ -572,8 +648,12 @@
                         p2Div.textContent = item.p2;
                         p2Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (item.winner === null) {
-                                item.winner = item.p2;
+                            if (clickable) {
+                                if (item.winner === item.p2) {
+                                    item.winner = null; // Undo if clicking the current winner
+                                } else {
+                                    item.winner = item.p2;
+                                }
                                 renderAll();
                                 saveState();
                             }
