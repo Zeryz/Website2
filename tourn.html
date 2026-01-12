@@ -38,7 +38,7 @@
             text-decoration: underline;
         }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
-    
+     
         .setup {
             background: #222;
             padding: 20px;
@@ -373,10 +373,9 @@
                     round.splice(byeIndex, 1);
                     round.push({ p1: byeItem.player, p2: newPlayer.name, winner: null });
                 } else {
-                    const undecided = round.filter((item, index) => item.type !== 'bye' && item.winner === null && index >= 2); // Exclude first two matches
+                    const undecided = round.filter(item => item.type !== 'bye' && item.winner === null);
                     if (undecided.length === 0) {
-                        if (!confirm('Cannot add to current round without disrupting the first two matches. Add to next round instead?')) return;
-                        // If no, do nothing; if yes, player joins next round (no change needed)
+                        alert('Cannot add to current round, all matches decided. Player will join next round.');
                     } else {
                         const randMatch = undecided[Math.floor(Math.random() * undecided.length)];
                         const matchIndex = round.indexOf(randMatch);
@@ -610,7 +609,7 @@
                 roundDiv.innerHTML = `<h2>${roundTitle}</h2>`;
                 const matchesDiv = document.createElement('div');
                 matchesDiv.className = 'matches';
-                round.forEach((item, itemIdx) => {
+                round.forEach((item) => {
                     const itemDiv = document.createElement('div');
                     if (item.type === 'bye') {
                         itemDiv.className = 'match bye-match';
@@ -620,22 +619,16 @@
                         `;
                     } else {
                         const isUndecided = item.winner === null;
-                        const isCurrentRound = rIdx === currentRoundIndex;
-                        const clickable = isCurrentRound || isUndecided;
-                        itemDiv.className = 'match' + (clickable ? ' clickable' : '');
-                        const p1Class = item.winner === item.p1 ? 'winner player-line' : 'player-line' + (clickable ? ' clickable' : '');
-                        const p2Class = item.winner === item.p2 ? 'winner player-line' : 'player-line' + (clickable ? ' clickable' : '');
+                        itemDiv.className = 'match' + (isUndecided ? ' clickable' : '');
+                        const p1Class = item.winner === item.p1 ? 'winner player-line' : 'player-line' + (isUndecided ? ' clickable' : '');
+                        const p2Class = item.winner === item.p2 ? 'winner player-line' : 'player-line' + (isUndecided ? ' clickable' : '');
                         const p1Div = document.createElement('div');
                         p1Div.className = p1Class;
                         p1Div.textContent = item.p1;
                         p1Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (clickable) {
-                                if (item.winner === item.p1) {
-                                    item.winner = null; // Undo if clicking the current winner
-                                } else {
-                                    item.winner = item.p1;
-                                }
+                            if (item.winner === null) {
+                                item.winner = item.p1;
                                 renderAll();
                                 saveState();
                             }
@@ -648,12 +641,8 @@
                         p2Div.textContent = item.p2;
                         p2Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (clickable) {
-                                if (item.winner === item.p2) {
-                                    item.winner = null; // Undo if clicking the current winner
-                                } else {
-                                    item.winner = item.p2;
-                                }
+                            if (item.winner === null) {
+                                item.winner = item.p2;
                                 renderAll();
                                 saveState();
                             }
