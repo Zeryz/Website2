@@ -521,20 +521,41 @@
         }
 
         function propagateAutoWins() {
-            rounds.forEach(round => {
-                round.forEach(item => {
-                    if (item.type === 'bye' || item.winner !== null || item.ignoreAuto) return;
-                    const p1n = resolve(item.p1);
-                    const p2n = resolve(item.p2);
-                    const p1Disp = getDisplayName(item.p1);
-                    const p2Disp = getDisplayName(item.p2);
-                    if (p1n === null && p2n !== null && p1Disp.startsWith('Eliminated')) {
-                        item.winner = p2n;
-                    } else if (p2n === null && p1n !== null && p2Disp.startsWith('Eliminated')) {
-                        item.winner = p1n;
+            let changed = true;
+            while (changed) {
+                changed = false;
+                const toRemove = [];
+                rounds.forEach(round => {
+                    round.forEach(item => {
+                        if (item.type === 'bye') {
+                            const sourceDisp = getDisplayName(item.source);
+                            if (sourceDisp.startsWith('Eliminated')) {
+                                toRemove.push({round, item});
+                            }
+                            return;
+                        }
+                        if (item.winner !== null || item.ignoreAuto) return;
+                        const p1n = resolve(item.p1);
+                        const p2n = resolve(item.p2);
+                        const p1Disp = getDisplayName(item.p1);
+                        const p2Disp = getDisplayName(item.p2);
+                        if (p1n === null && p2n !== null && p1Disp.startsWith('Eliminated')) {
+                            item.winner = p2n;
+                            changed = true;
+                        } else if (p2n === null && p1n !== null && p2Disp.startsWith('Eliminated')) {
+                            item.winner = p1n;
+                            changed = true;
+                        }
+                    });
+                });
+                toRemove.forEach(({round, item}) => {
+                    const index = round.indexOf(item);
+                    if (index > -1) {
+                        round.splice(index, 1);
                     }
                 });
-            });
+                if (toRemove.length > 0) changed = true;
+            }
         }
 
         function shuffle(array) {
@@ -758,8 +779,9 @@
                 round.forEach((item) => {
                     const itemDiv = document.createElement('div');
                     if (item.type === 'bye') {
-                        itemDiv.className = 'match bye-match';
                         const playerDisp = getDisplayName(item.source);
+                        if (playerDisp.startsWith('Eliminated')) return; // Skip rendering eliminated byes
+                        itemDiv.className = 'match bye-match';
                         itemDiv.innerHTML = `
                             <div class="player-line">${playerDisp}</div>
                             <div class="bye">Bye</div>
@@ -817,7 +839,9 @@
                         itemDiv.appendChild(vsDiv);
                         itemDiv.appendChild(p2Div);
                     }
-                    matchesDiv.appendChild(itemDiv);
+                    if (item.type !== 'bye' || !getDisplayName(item.source).startsWith('Eliminated')) {
+                        matchesDiv.appendChild(itemDiv);
+                    }
                 });
                 roundDiv.appendChild(matchesDiv);
                 container.appendChild(roundDiv);
