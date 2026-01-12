@@ -612,8 +612,8 @@
             let isPartial = pendingSources.length > 0;
             if (pairingActive.length % 2 === 1) {
                 if (isPartial) {
-                    const maxByes = Math.max(...ready.map(p => p.byes), 0);
-                    const candidates = ready.filter(p => p.byes === maxByes);
+                    const minByes = Math.min(...ready.map(p => p.byes), 0);
+                    const candidates = ready.filter(p => p.byes === minByes);
                     if (candidates.length > 0) {
                         const leftP = candidates[Math.floor(Math.random() * candidates.length)];
                         byeSource = readySources.find(s => s.name === leftP.name);
