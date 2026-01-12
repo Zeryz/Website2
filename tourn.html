@@ -497,15 +497,10 @@
                     winner: null
                 });
             }
-            let targetRound;
-            if (rounds.length > 0 && !isRoundComplete(rounds[rounds.length - 1])) {
-                targetRound = rounds[rounds.length - 1];
-            } else {
-                targetRound = [];
-                rounds.push(targetRound);
+            if (newItems.length > 0) {
+                rounds.push(newItems);
+                currentRoundIndex = rounds.length - 1;
             }
-            newItems.forEach(item => targetRound.push(item));
-            currentRoundIndex = rounds.length - 1;
             renderAll();
             saveState();
         }
