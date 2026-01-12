@@ -631,12 +631,20 @@
                         }
                     } else if (item.winner) {
                         const winnerP = players.find(p => p.name === item.winner);
-                        const p1n = resolve(item.p1);
-                        const p2n = resolve(item.p2);
+                        const p1n = resolve(item.p1, true);
+                        const p2n = resolve(item.p2, true);
                         const loserName = item.winner === p1n ? p2n : p1n;
                         const loser = players.find(p => p.name === loserName);
-                        if (winnerP) winnerP.wins += 1;
-                        if (loser) loser.losses += 1;
+                        if (loser && loser.losses < maxLosses) {
+                            loser.losses += 1;
+                        }
+                        if (winnerP) {
+                            if (loser) {
+                                winnerP.wins += 1;
+                            } else {
+                                winnerP.byes += 1;
+                            }
+                        }
                     }
                 });
             });
@@ -726,8 +734,10 @@
                         const isP1Clickable = p1Disp !== 'TBD' && p1Name !== null;
                         const isP2Clickable = p2Disp !== 'TBD' && p2Name !== null;
                         itemDiv.className = 'match' + ((isP1Clickable || isP2Clickable) ? ' clickable' : '');
-                        const p1Class = (item.winner === p1Name ? 'winner ' : '') + 'player-line' + (isP1Clickable ? ' clickable' : '');
-                        const p2Class = (item.winner === p2Name ? 'winner ' : '') + 'player-line' + (isP2Clickable ? ' clickable' : '');
+                        let p1Class = (item.winner === p1Name ? 'winner ' : '') + 'player-line' + (isP1Clickable ? ' clickable' : '');
+                        let p2Class = (item.winner === p2Name ? 'winner ' : '') + 'player-line' + (isP2Clickable ? ' clickable' : '');
+                        if (p1Disp.startsWith('Eliminated')) p1Class += ' eliminated';
+                        if (p2Disp.startsWith('Eliminated')) p2Class += ' eliminated';
                         const p1Div = document.createElement('div');
                         p1Div.className = p1Class;
                         p1Div.textContent = p1Disp;
@@ -736,10 +746,10 @@
                             if (isP1Clickable) {
                                 if (item.winner === p1Name) {
                                     item.winner = null;
-                                    item.ignoreAuto = true;
+                                    item.ignoreAuto = false;
                                 } else {
                                     item.winner = p1Name;
-                                    item.ignoreAuto = false;
+                                    item.ignoreAuto = p1Disp.startsWith('Eliminated');
                                 }
                                 renderAll();
                                 saveState();
@@ -756,10 +766,10 @@
                             if (isP2Clickable) {
                                 if (item.winner === p2Name) {
                                     item.winner = null;
-                                    item.ignoreAuto = true;
+                                    item.ignoreAuto = false;
                                 } else {
                                     item.winner = p2Name;
-                                    item.ignoreAuto = false;
+                                    item.ignoreAuto = p2Disp.startsWith('Eliminated');
                                 }
                                 renderAll();
                                 saveState();
