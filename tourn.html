@@ -334,7 +334,7 @@
     </div>
     <script>
         let playerNames = [];
-        let players = []; // {name, losses: 0, byes: 0, wins: 0}
+        let players = []; // {name, losses: 0, byes: 0, wins: 0, lastOpponent: null}
         let format = 'double';
         let maxLosses = 2;
         let rounds = [];
@@ -364,7 +364,7 @@
             if (!name || !name.trim()) return;
             name = name.trim();
             if (players.find(p => p.name === name)) return alert('Player already added!');
-            const newPlayer = { name, losses: 0, byes: 0, wins: 0 };
+            const newPlayer = { name, losses: 0, byes: 0, wins: 0, lastOpponent: null };
             players.push(newPlayer);
             if (currentRoundIndex >= 0 && !isRoundComplete(rounds[currentRoundIndex])) {
                 let round = rounds[currentRoundIndex];
@@ -430,7 +430,7 @@
             if (playerNames.length < 2) return alert('Add at least 2 players!');
             format = document.getElementById('format').value;
             maxLosses = format === 'single' ? 1 : 2;
-            players = playerNames.map(name => ({ name, losses: 0, byes: 0, wins: 0 }));
+            players = playerNames.map(name => ({ name, losses: 0, byes: 0, wins: 0, lastOpponent: null }));
             playerNames = [];
             rounds = [];
             currentRoundIndex = -1;
@@ -612,8 +612,8 @@
             let isPartial = pendingSources.length > 0;
             if (pairingActive.length % 2 === 1) {
                 if (isPartial) {
-                    const minByes = Math.min(...ready.map(p => p.byes), 0);
-                    const candidates = ready.filter(p => p.byes === minByes);
+                    const maxByes = Math.max(...ready.map(p => p.byes), 0);
+                    const candidates = ready.filter(p => p.byes === maxByes);
                     if (candidates.length > 0) {
                         const leftP = candidates[Math.floor(Math.random() * candidates.length)];
                         byeSource = readySources.find(s => s.name === leftP.name);
@@ -648,7 +648,9 @@
                     const n2 = resolve(s2);
                     if (n1 && n2) {
                         let pair = [n1, n2].sort().join('-');
-                        if (pastMatches.has(pair)) rematches++;
+                        if (pastMatches.has(pair)) rematches += 1;
+                        const p1 = players.find(p => p.name === n1);
+                        if (p1 && p1.lastOpponent === n2) rematches += 2; // Strong penalty for consecutive rematch
                     }
                 }
                 if (rematches < minRematches) {
@@ -694,6 +696,10 @@
                         const loser = players.find(p => p.name === loserName);
                         if (loser) {
                             loser.losses += 1;
+                            if (winnerP) {
+                                winnerP.lastOpponent = loserName;
+                                loser.lastOpponent = item.winner;
+                            }
                         }
                         if (winnerP) {
                             if (loser) {
@@ -907,6 +913,7 @@
             matchIdCounter = data.matchIdCounter || 0;
             maxLosses = format === 'single' ? 1 : 2;
             currentRoundIndex = rounds.length - 1;
+            players = players.map(p => ({ ...p, lastOpponent: p.lastOpponent || null }));
             document.getElementById('format').value = format;
             if (tournamentStarted) {
                 document.getElementById('preStartInput').style.display = 'none';
