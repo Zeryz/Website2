@@ -38,7 +38,7 @@
             text-decoration: underline;
         }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
-  
+ 
         .setup {
             background: #222;
             padding: 20px;
@@ -505,6 +505,10 @@
             }
             return 'Eliminated';
         }
+        function getPendingKey(source) {
+            if (source.type === 'player') return null;
+            return `${source.type}_${source.itemId}`;
+        }
         function propagateAutoWins() {
             let changed = true;
             while (changed) {
@@ -531,7 +535,7 @@
                         const p2Disp = getDisplayName(item.p2);
                         if (p1n === null && p2n !== null && p1Disp.startsWith('Eliminated')) {
                             item.winner = p2n;
-                            item.ignoreAuto = true; // Mark as auto to distinguish
+                            item.ignoreAuto = true;
                             freeAdvances.push({type: 'auto_win', player: p2n, item});
                             changed = true;
                         } else if (p2n === null && p1n !== null && p2Disp.startsWith('Eliminated')) {
@@ -549,22 +553,18 @@
                     }
                 });
                 if (toRemove.length > 0) changed = true;
-                // Consolidate free advances in the latest round
                 if (freeAdvances.length >= 2) {
                     shuffle(freeAdvances);
                     for (let i = 0; i < freeAdvances.length - (freeAdvances.length % 2); i += 2) {
                         const fa1 = freeAdvances[i];
                         const fa2 = freeAdvances[i + 1];
                         const round = rounds[rounds.length - 1];
-                        // Remove original items
                         const index1 = round.indexOf(fa1.item);
                         if (index1 > -1) round.splice(index1, 1);
                         const index2 = round.indexOf(fa2.item);
                         if (index2 > -1) round.splice(index2, 1);
-                        // If they were auto-wins, reset winner since they'll play
                         if (fa1.type === 'auto_win') fa1.item.winner = null;
                         if (fa2.type === 'auto_win') fa2.item.winner = null;
-                        // Create new match
                         round.push({
                             p1: {type: 'player', name: fa1.player},
                             p2: {type: 'player', name: fa2.player},
@@ -574,7 +574,6 @@
                         });
                         changed = true;
                     }
-                    // If odd number left, leave the last as bye or auto-win
                 }
             }
         }
@@ -623,6 +622,15 @@
                             let pair = [p1n, p2n].sort().join('-');
                             pastMatches.add(pair);
                         }
+                    } else if (item.type !== 'bye' && item.winner === null) {
+                        const s1 = item.p1;
+                        const s2 = item.p2;
+                        if (s1.type !== 'player' && s2.type !== 'player') {
+                            let key1 = getPendingKey(s1);
+                            let key2 = getPendingKey(s2);
+                            let pair = [key1, key2].sort().join('-');
+                            pastMatches.add(pair);
+                        }
                     }
                 });
             });
@@ -664,14 +672,20 @@
                 let rematches = 0;
                 for (let i = 0; i < shuffled.length; i += 2) {
                     const s1 = shuffled[i];
-                    const n1 = resolve(s1);
                     const s2 = shuffled[i + 1];
+                    const n1 = resolve(s1);
                     const n2 = resolve(s2);
                     if (n1 && n2) {
                         let pair = [n1, n2].sort().join('-');
                         if (pastMatches.has(pair)) rematches += 1;
                         const p1 = players.find(p => p.name === n1);
                         if (p1 && p1.lastOpponent === n2) rematches += 2; // Strong penalty for consecutive rematch
+                    } else if (s1.type !== 'player' && s2.type !== 'player') {
+                        let key1 = getPendingKey(s1);
+                        let key2 = getPendingKey(s2);
+                        let pair = [key1, key2].sort().join('-');
+                        if (pastMatches.has(pair)) rematches += 10; // High penalty for repeating TBD pair
+                        if (s1.itemId === s2.itemId) rematches += 20; // Extra for winner/loser from same match
                     }
                 }
                 if (rematches < minRematches) {
@@ -938,6 +952,10 @@
             }
             renderAll();
             alert('Tournament loaded!');
+        }
+        function getPendingKey(source) {
+            if (source.type === 'player') return null;
+            return `${source.type}_${source.itemId}`;
         }
         window.onload = () => document.getElementById('nameInput').focus();
     </script>
