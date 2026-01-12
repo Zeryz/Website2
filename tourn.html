@@ -38,7 +38,7 @@
             text-decoration: underline;
         }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
-     
+    
         .setup {
             background: #222;
             padding: 20px;
@@ -377,9 +377,9 @@
                     round.splice(byeIndex, 1);
                     round.push({ p1: {type: 'player', name: byeName}, p2: {type: 'player', name: newPlayer.name}, winner: null, id: matchIdCounter++, ignoreAuto: false });
                 } else {
-                    const undecided = round.filter(item => item.type !== 'bye' && item.winner === null && resolve(item.p1) && resolve(item.p2));
+                    const undecided = round.filter((item, index) => item.type !== 'bye' && item.winner === null && resolve(item.p1) && resolve(item.p2) && index >= 2);
                     if (undecided.length === 0) {
-                        alert('Cannot add to current round, all matches decided. Player will join next round.');
+                        if (!confirm('Cannot add to current round without disrupting the first two matches. Add to next round instead?')) return;
                     } else {
                         const randMatch = undecided[Math.floor(Math.random() * undecided.length)];
                         const matchIndex = round.indexOf(randMatch);
@@ -523,6 +523,15 @@
                 });
             });
         }
+        function shuffle(array) {
+            let currentIndex = array.length;
+            while (currentIndex != 0) {
+                let randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
         function generateNextRound() {
             let active = getActivePlayers();
             if (active.length <= 1) {
@@ -564,25 +573,36 @@
             });
             const newRound = [];
             let byeSource = null;
+            let isPartial = pendingSources.length > 0;
             if (pairingActive.length % 2 === 1) {
-                const minByes = Math.min(...active.map(p => p.byes));
-                const candidates = ready.filter(p => p.byes === minByes);
-                if (candidates.length > 0) {
-                    const byeP = candidates[Math.floor(Math.random() * candidates.length)];
-                    byeP.byes += 1;
-                    byeSource = readySources.find(s => s.name === byeP.name);
-                } else if (pendingSources.length > 0) {
-                    byeSource = pendingSources[Math.floor(Math.random() * pendingSources.length)];
-                }
-                if (byeSource) {
-                    pairingActive = pairingActive.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
-                    newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
+                if (isPartial) {
+                    const maxByes = Math.max(...ready.map(p => p.byes));
+                    const candidates = ready.filter(p => p.byes === maxByes);
+                    if (candidates.length > 0) {
+                        const leftP = candidates[Math.floor(Math.random() * candidates.length)];
+                        byeSource = readySources.find(s => s.name === leftP.name);
+                        pairingActive = pairingActive.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
+                    }
+                } else {
+                    const minByes = Math.min(...active.map(p => p.byes));
+                    const candidates = ready.filter(p => p.byes === minByes);
+                    if (candidates.length > 0) {
+                        const byeP = candidates[Math.floor(Math.random() * candidates.length)];
+                        byeP.byes += 1;
+                        byeSource = readySources.find(s => s.name === byeP.name);
+                    } else if (pendingSources.length > 0) {
+                        byeSource = pendingSources[Math.floor(Math.random() * pendingSources.length)];
+                    }
+                    if (byeSource) {
+                        pairingActive = pairingActive.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
+                        newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
+                    }
                 }
             }
             let bestShuffle = null;
             let minRematches = Infinity;
             for (let attempt = 0; attempt < 100; attempt++) {
-                const shuffled = [...pairingActive].sort(() => Math.random() - 0.5);
+                const shuffled = shuffle([...pairingActive]);
                 let rematches = 0;
                 for (let i = 0; i < shuffled.length; i += 2) {
                     const s1 = shuffled[i];
