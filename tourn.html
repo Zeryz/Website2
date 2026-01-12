@@ -316,6 +316,14 @@
                     <option value="double" selected>Double Elimination</option>
                     <option value="single">Single Elimination</option>
                 </select>
+                <select id="protectedTables">
+                    <option value="0">0 Protected Tables</option>
+                    <option value="1">1 Protected Table</option>
+                    <option value="2" selected>2 Protected Tables</option>
+                    <option value="3">3 Protected Tables</option>
+                    <option value="4">4 Protected Tables</option>
+                    <option value="5">5 Protected Tables</option>
+                </select>
                 <button onclick="startTournament()">Start Tournament</button>
                 <button onclick="loadState()" class="secondary">Load Saved</button>
                 <button id="addLateBtn" onclick="addLatePlayer()" class="secondary" style="display: none;">Add Late Player</button>
@@ -341,7 +349,7 @@
         let currentRoundIndex = -1;
         let tiebreakerActive = false;
         let tournamentStarted = false;
-        let matchIdCounter = 0;
+        let protectedTables = 2;
         document.getElementById('nameInput').addEventListener('keydown', e => {
             if (e.key === 'Enter' && e.target.value.trim()) {
                 addPlayer(e.target.value.trim());
@@ -369,31 +377,28 @@
                 let byeIndex = round.findIndex(item => item.type === 'bye');
                 if (byeIndex !== -1) {
                     const byeItem = round[byeIndex];
-                    const byeName = resolve(byeItem.source);
-                    if (byeName) {
-                        const byeP = players.find(p => p.name === byeName);
-                        if (byeP) byeP.byes -= 1;
-                    }
+                    const byeP = players.find(p => p.name === byeItem.player);
+                    if (byeP) byeP.byes -= 1;
                     round.splice(byeIndex, 1);
-                    round.push({ p1: {type: 'player', name: byeName}, p2: {type: 'player', name: newPlayer.name}, winner: null, id: matchIdCounter++, ignoreAuto: false });
+                    round.push({ p1: byeItem.player, p2: newPlayer.name, winner: null });
                 } else {
-                    const undecided = round.filter(item => item.type !== 'bye' && item.winner === null && resolve(item.p1) && resolve(item.p2));
-                    if (undecided.length === 0) {
-                        alert('Cannot add to current round, all matches decided. Player will join next round.');
+                    const undecided = round.filter(item => item.type !== 'bye' && item.winner === null);
+                    if (undecided.length <= protectedTables) {
+                        alert('Cannot add to current round without disrupting protected matches. Player will join next round.');
                     } else {
-                        const randMatch = undecided[Math.floor(Math.random() * undecided.length)];
+                        // Select from undecided beyond the protected ones
+                        const disruptCandidates = undecided.slice(protectedTables);
+                        const randMatch = disruptCandidates[Math.floor(Math.random() * disruptCandidates.length)];
                         const matchIndex = round.indexOf(randMatch);
-                        const p1Name = resolve(randMatch.p1);
-                        const p2Name = resolve(randMatch.p2);
-                        const playersInMatch = [p1Name, p2Name];
+                        const playersInMatch = [randMatch.p1, randMatch.p2];
                         const byeIdx = Math.floor(Math.random() * 2);
                         const byeName = playersInMatch[byeIdx];
                         const oppName = playersInMatch[1 - byeIdx];
                         const byeP = players.find(p => p.name === byeName);
                         if (byeP) byeP.byes += 1;
                         round.splice(matchIndex, 1);
-                        round.push({ type: 'bye', source: {type: 'player', name: byeName}, id: matchIdCounter++ });
-                        round.push({ p1: {type: 'player', name: oppName}, p2: {type: 'player', name: newPlayer.name}, winner: null, id: matchIdCounter++, ignoreAuto: false });
+                        round.push({ type: 'bye', player: byeName });
+                        round.push({ p1: oppName, p2: newPlayer.name, winner: null });
                     }
                 }
             }
@@ -423,6 +428,7 @@
         function startTournament() {
             if (playerNames.length < 2) return alert('Add at least 2 players!');
             format = document.getElementById('format').value;
+            protectedTables = parseInt(document.getElementById('protectedTables').value);
             maxLosses = format === 'single' ? 1 : 2;
             players = playerNames.map(name => ({ name, losses: 0, byes: 0, wins: 0 }));
             playerNames = [];
@@ -430,7 +436,6 @@
             currentRoundIndex = -1;
             tiebreakerActive = false;
             tournamentStarted = true;
-            matchIdCounter = 0;
             document.getElementById('preStartInput').style.display = 'none';
             document.getElementById('playersList').style.display = 'none';
             document.getElementById('addLateBtn').style.display = 'inline-block';
@@ -451,85 +456,17 @@
             });
             const busy = new Set();
             undecided.forEach(m => {
-                const p1 = resolve(m.p1);
-                const p2 = resolve(m.p2);
-                if (p1) busy.add(p1);
-                if (p2) busy.add(p2);
+                busy.add(m.p1);
+                busy.add(m.p2);
             });
             return getActivePlayers().filter(p => !busy.has(p.name));
         }
         function isRoundComplete(round) {
             return round.every(item => item.type === 'bye' || item.winner !== null);
         }
-        function findItemById(id) {
-            for (let round of rounds) {
-                for (let item of round) {
-                    if (item.id === id) return item;
-                }
-            }
-            return null;
-        }
-        function resolve(source, ignoreElim = false) {
-            if (source.type === 'player') {
-                const p = players.find(p => p.name === source.name);
-                if (p && (ignoreElim || p.losses < maxLosses)) return source.name;
-                return null;
-            }
-            const item = findItemById(source.itemId);
-            if (!item || item.winner === null) return null;
-            let resolvedName;
-            const p1Name = resolve(item.p1, ignoreElim);
-            const p2Name = resolve(item.p2, ignoreElim);
-            if (source.type === 'winner_of') {
-                resolvedName = item.winner;
-            } else if (source.type === 'loser_of') {
-                resolvedName = item.winner === p1Name ? p2Name : p1Name;
-            }
-            if (resolvedName) {
-                const p = players.find(p => p.name === resolvedName);
-                if (p && (ignoreElim || p.losses < maxLosses)) return resolvedName;
-            }
-            return null;
-        }
-        function isTBD(source) {
-            if (source.type === 'player') return false;
-            const item = findItemById(source.itemId);
-            return !item || item.winner === null;
-        }
-        function getDisplayName(source) {
-            const name = resolve(source, true);
-            if (name) {
-                const p = players.find(p => p.name === name);
-                if (p.losses >= maxLosses) return `Eliminated (${name})`;
-                return name;
-            } else if (isTBD(source)) {
-                return 'TBD';
-            }
-            return 'Eliminated';
-        }
-        function propagateAutoWins() {
-            rounds.forEach(round => {
-                round.forEach(item => {
-                    if (item.type === 'bye' || item.winner !== null || item.ignoreAuto) return;
-                    const p1n = resolve(item.p1);
-                    const p2n = resolve(item.p2);
-                    const p1Disp = getDisplayName(item.p1);
-                    const p2Disp = getDisplayName(item.p2);
-                    if (p1n === null && p2n !== null && p1Disp.startsWith('Eliminated')) {
-                        item.winner = p2n;
-                    } else if (p2n === null && p1n !== null && p2Disp.startsWith('Eliminated')) {
-                        item.winner = p1n;
-                    }
-                });
-            });
-        }
         function generateNextRound() {
-            let active = getActivePlayers();
-            if (active.length <= 1) {
-                checkForPodium();
-                return;
-            }
             let ready = getReadyPlayers();
+            if (ready.length < 2) return;
             let undecided = [];
             rounds.forEach(round => {
                 round.forEach(item => {
@@ -538,45 +475,35 @@
                     }
                 });
             });
-            let pendingSources = [];
-            if (format === 'single') {
-                pendingSources = undecided.map(item => ({type: 'winner_of', itemId: item.id}));
-            } else {
-                pendingSources = undecided.flatMap(item => [
-                    {type: 'winner_of', itemId: item.id},
-                    {type: 'loser_of', itemId: item.id}
-                ]);
-            }
-            let readySources = ready.map(p => ({type: 'player', name: p.name}));
-            let pairingActive = readySources.concat(pendingSources);
+            const isPartial = undecided.length > 0;
             let pastMatches = new Set();
             rounds.forEach(round => {
                 round.forEach(item => {
                     if (item.type !== 'bye' && item.winner) {
-                        let p1n = resolve(item.p1);
-                        let p2n = resolve(item.p2);
-                        if (p1n && p2n) {
-                            let pair = [p1n, p2n].sort().join('-');
-                            pastMatches.add(pair);
-                        }
+                        let pair = [item.p1, item.p2].sort().join('-');
+                        pastMatches.add(pair);
                     }
                 });
             });
-            const newRound = [];
-            let byeSource = null;
-            if (pairingActive.length % 2 === 1) {
-                const minByes = Math.min(...active.map(p => p.byes));
-                const candidates = ready.filter(p => p.byes === minByes);
-                if (candidates.length > 0) {
-                    const byeP = candidates[Math.floor(Math.random() * candidates.length)];
-                    byeP.byes += 1;
-                    byeSource = readySources.find(s => s.name === byeP.name);
-                } else if (pendingSources.length > 0) {
-                    byeSource = pendingSources[Math.floor(Math.random() * pendingSources.length)];
-                }
-                if (byeSource) {
-                    pairingActive = pairingActive.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
-                    newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
+            const newItems = [];
+            let byePlayer = null;
+            let leftPlayer = null;
+            let pairingActive = [...ready];
+            if (ready.length % 2 === 1) {
+                if (isPartial) {
+                    // Leave one with max byes unpaired
+                    const maxByes = Math.max(...ready.map(p => p.byes));
+                    const candidates = ready.filter(p => p.byes === maxByes);
+                    leftPlayer = candidates[Math.floor(Math.random() * candidates.length)];
+                    pairingActive = ready.filter(p => p.name !== leftPlayer.name);
+                } else {
+                    // Assign bye to one with min byes
+                    const minByes = Math.min(...ready.map(p => p.byes));
+                    const candidates = ready.filter(p => p.byes === minByes);
+                    byePlayer = candidates[Math.floor(Math.random() * candidates.length)];
+                    byePlayer.byes += 1;
+                    newItems.push({type: 'bye', player: byePlayer.name});
+                    pairingActive = ready.filter(p => p.name !== byePlayer.name);
                 }
             }
             let bestShuffle = null;
@@ -585,14 +512,8 @@
                 const shuffled = [...pairingActive].sort(() => Math.random() - 0.5);
                 let rematches = 0;
                 for (let i = 0; i < shuffled.length; i += 2) {
-                    const s1 = shuffled[i];
-                    const n1 = resolve(s1);
-                    const s2 = shuffled[i + 1];
-                    const n2 = resolve(s2);
-                    if (n1 && n2) {
-                        let pair = [n1, n2].sort().join('-');
-                        if (pastMatches.has(pair)) rematches++;
-                    }
+                    let pair = [shuffled[i].name, shuffled[i+1].name].sort().join('-');
+                    if (pastMatches.has(pair)) rematches++;
                 }
                 if (rematches < minRematches) {
                     minRematches = rematches;
@@ -601,16 +522,16 @@
                 }
             }
             for (let i = 0; i < bestShuffle.length; i += 2) {
-                newRound.push({
-                    p1: bestShuffle[i],
-                    p2: bestShuffle[i + 1],
-                    winner: null,
-                    id: matchIdCounter++,
-                    ignoreAuto: false
+                newItems.push({
+                    p1: bestShuffle[i].name,
+                    p2: bestShuffle[i + 1].name,
+                    winner: null
                 });
             }
-            rounds.push(newRound);
-            currentRoundIndex = rounds.length - 1;
+            if (newItems.length > 0) {
+                rounds.push(newItems);
+                currentRoundIndex = rounds.length - 1;
+            }
             renderAll();
             saveState();
         }
@@ -618,38 +539,22 @@
             players.forEach(p => {
                 p.losses = 0;
                 p.wins = 0;
-                p.byes = 0;
             });
             rounds.forEach((round, roundIdx) => {
                 if (tiebreakerActive && roundIdx === rounds.length - 1) return;
                 round.forEach(item => {
-                    if (item.type === 'bye') {
-                        const name = resolve(item.source);
-                        if (name) {
-                            const p = players.find(p => p.name === name);
-                            if (p) p.byes += 1;
-                        }
-                    } else if (item.winner) {
+                    if (item.type !== 'bye' && item.winner) {
                         const winnerP = players.find(p => p.name === item.winner);
-                        const p1n = resolve(item.p1, true);
-                        const p2n = resolve(item.p2, true);
-                        const loserName = item.winner === p1n ? p2n : p1n;
+                        const loserName = item.winner === item.p1 ? item.p2 : item.p1;
                         const loser = players.find(p => p.name === loserName);
-                        if (loser && loser.losses < maxLosses) {
-                            loser.losses += 1;
-                        }
-                        if (winnerP) {
-                            if (loser) {
-                                winnerP.wins += 1;
-                            } else {
-                                winnerP.byes += 1;
-                            }
-                        }
+                        if (winnerP) winnerP.wins += 1;
+                        if (loser) loser.losses += 1;
                     }
                 });
             });
         }
         function renderStandings() {
+            applyMatchResults();
             const div = document.getElementById('standings');
             div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th><th>Wins</th><th>Byes</th><th></th></tr></table>';
             const table = div.querySelector('table');
@@ -681,23 +586,22 @@
             players = players.filter(p => p.name !== name);
             if (currentRoundIndex >= 0 && !isRoundComplete(rounds[currentRoundIndex])) {
                 let round = rounds[currentRoundIndex];
-                let byeIndex = round.findIndex(item => item.type === 'bye' && resolve(item.source) === name);
-                let matchIndex = round.findIndex(item => item.type !== 'bye' && (resolve(item.p1) === name || resolve(item.p2) === name));
+                let byeIndex = round.findIndex(item => item.type === 'bye');
+                let matchIndex = round.findIndex(item => item.type !== 'bye' && (item.p1 === name || item.p2 === name));
                 if (matchIndex > -1) {
                     const match = round[matchIndex];
-                    const opponent = resolve(match.p1) === name ? resolve(match.p2) : resolve(match.p1);
+                    const opponent = match.p1 === name ? match.p2 : match.p1;
                     round.splice(matchIndex, 1);
                     if (byeIndex > -1) {
-                        const byeItem = round[byeIndex];
-                        const byeName = resolve(byeItem.source);
+                        const byePlayerName = round[byeIndex].player;
                         round.splice(byeIndex, 1);
-                        round.push({p1: {type: 'player', name: byeName}, p2: {type: 'player', name: opponent}, winner: null, id: matchIdCounter++, ignoreAuto: false});
-                        const byeP = players.find(p => p.name === byeName);
+                        round.push({p1: byePlayerName, p2: opponent, winner: null});
+                        const byeP = players.find(p => p.name === byePlayerName);
                         if (byeP) byeP.byes -= 1;
                     } else {
-                        round.push({type: 'bye', source: {type: 'player', name: opponent}, id: matchIdCounter++});
+                        round.push({type: 'bye', player: opponent});
                     }
-                } else if (byeIndex > -1) {
+                } else if (byeIndex > -1 && round[byeIndex].player === name) {
                     round.splice(byeIndex, 1);
                 }
             }
@@ -721,36 +625,22 @@
                     const itemDiv = document.createElement('div');
                     if (item.type === 'bye') {
                         itemDiv.className = 'match bye-match';
-                        const playerDisp = getDisplayName(item.source);
                         itemDiv.innerHTML = `
-                            <div class="player-line">${playerDisp}</div>
+                            <div class="player-line">${item.player}</div>
                             <div class="bye">Bye</div>
                         `;
                     } else {
-                        const p1Disp = getDisplayName(item.p1);
-                        const p2Disp = getDisplayName(item.p2);
-                        const p1Name = resolve(item.p1, true);
-                        const p2Name = resolve(item.p2, true);
-                        const isP1Clickable = p1Disp !== 'TBD' && p1Name !== null;
-                        const isP2Clickable = p2Disp !== 'TBD' && p2Name !== null;
-                        itemDiv.className = 'match' + ((isP1Clickable || isP2Clickable) ? ' clickable' : '');
-                        let p1Class = (item.winner === p1Name ? 'winner ' : '') + 'player-line' + (isP1Clickable ? ' clickable' : '');
-                        let p2Class = (item.winner === p2Name ? 'winner ' : '') + 'player-line' + (isP2Clickable ? ' clickable' : '');
-                        if (p1Disp.startsWith('Eliminated')) p1Class += ' eliminated';
-                        if (p2Disp.startsWith('Eliminated')) p2Class += ' eliminated';
+                        const isUndecided = item.winner === null;
+                        itemDiv.className = 'match' + (isUndecided ? ' clickable' : '');
+                        const p1Class = item.winner === item.p1 ? 'winner player-line' : 'player-line' + (isUndecided ? ' clickable' : '');
+                        const p2Class = item.winner === item.p2 ? 'winner player-line' : 'player-line' + (isUndecided ? ' clickable' : '');
                         const p1Div = document.createElement('div');
                         p1Div.className = p1Class;
-                        p1Div.textContent = p1Disp;
+                        p1Div.textContent = item.p1;
                         p1Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (isP1Clickable) {
-                                if (item.winner === p1Name) {
-                                    item.winner = null;
-                                    item.ignoreAuto = false;
-                                } else {
-                                    item.winner = p1Name;
-                                    item.ignoreAuto = p1Disp.startsWith('Eliminated');
-                                }
+                            if (item.winner === null) {
+                                item.winner = item.p1;
                                 renderAll();
                                 saveState();
                             }
@@ -760,17 +650,11 @@
                         vsDiv.textContent = 'vs';
                         const p2Div = document.createElement('div');
                         p2Div.className = p2Class;
-                        p2Div.textContent = p2Disp;
+                        p2Div.textContent = item.p2;
                         p2Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (isP2Clickable) {
-                                if (item.winner === p2Name) {
-                                    item.winner = null;
-                                    item.ignoreAuto = false;
-                                } else {
-                                    item.winner = p2Name;
-                                    item.ignoreAuto = p2Disp.startsWith('Eliminated');
-                                }
+                            if (item.winner === null) {
+                                item.winner = item.p2;
                                 renderAll();
                                 saveState();
                             }
@@ -786,8 +670,6 @@
             });
         }
         function renderAll() {
-            applyMatchResults();
-            propagateAutoWins();
             renderStandings();
             renderRounds();
             checkForPodium();
@@ -795,6 +677,7 @@
             document.getElementById('nextRoundBtn').style.display = ready.length >= 2 ? 'block' : 'none';
         }
         function checkForPodium() {
+            applyMatchResults();
             const active = getActivePlayers();
             if (active.length > 1) return;
             const podiumDiv = document.getElementById('podium');
@@ -805,20 +688,16 @@
                 const losers = [];
                 prevRound.forEach(item => {
                     if (item.type !== 'bye' && item.winner) {
-                        const p1 = resolve(item.p1, true);
-                        const p2 = resolve(item.p2, true);
-                        const loserName = item.winner === p1 ? p2 : p1;
-                        if (loserName) losers.push(loserName);
+                        const loserName = item.winner === item.p1 ? item.p2 : item.p1;
+                        losers.push(loserName);
                     }
                 });
                 if (losers.length === 2) {
                     tiebreakerActive = true;
                     const tieRound = [{
-                        p1: {type: 'player', name: losers[0]},
-                        p2: {type: 'player', name: losers[1]},
-                        winner: null,
-                        id: matchIdCounter++,
-                        ignoreAuto: false
+                        p1: losers[0],
+                        p2: losers[1],
+                        winner: null
                     }];
                     rounds.push(tieRound);
                     currentRoundIndex = rounds.length - 1;
@@ -831,22 +710,18 @@
             const finalMatch = finalRound.find(item => item.type !== 'bye');
             if (finalMatch && finalMatch.winner) {
                 const first = finalMatch.winner;
-                const p1 = resolve(finalMatch.p1, true);
-                const p2 = resolve(finalMatch.p2, true);
-                const second = finalMatch.winner === p1 ? p2 : p1;
+                const second = finalMatch.winner === finalMatch.p1 ? finalMatch.p2 : finalMatch.p1;
                 podiumDiv.innerHTML += `<div>1st Place: ${first}</div>`;
-                if (second) podiumDiv.innerHTML += `<div>2nd Place: ${second}</div>`;
+                podiumDiv.innerHTML += `<div>2nd Place: ${second}</div>`;
             }
             if (tiebreakerActive) {
                 const tieRound = rounds[rounds.length - 1];
                 const tieMatch = tieRound.find(item => item.type !== 'bye');
                 if (tieMatch && tieMatch.winner) {
                     const third = tieMatch.winner;
-                    const p1 = resolve(tieMatch.p1, true);
-                    const p2 = resolve(tieMatch.p2, true);
-                    const fourth = tieMatch.winner === p1 ? p2 : p1;
+                    const fourth = tieMatch.winner === tieMatch.p1 ? tieMatch.p2 : tieMatch.p1;
                     podiumDiv.innerHTML += `<div>3rd Place: ${third}</div>`;
-                    if (fourth) podiumDiv.innerHTML += `<div>4th Place: ${fourth}</div>`;
+                    podiumDiv.innerHTML += `<div>4th Place: ${fourth}</div>`;
                 }
             }
             podiumDiv.style.display = 'block';
@@ -856,11 +731,11 @@
             localStorage.setItem('poolTournament', JSON.stringify({
                 playerNames,
                 format,
+                protectedTables,
                 players,
                 rounds,
                 tiebreakerActive,
-                tournamentStarted,
-                matchIdCounter
+                tournamentStarted
             }));
         }
         function loadState() {
@@ -869,14 +744,15 @@
             const data = JSON.parse(saved);
             playerNames = data.playerNames || [];
             format = data.format || 'double';
+            protectedTables = data.protectedTables || 2;
             players = data.players || [];
             rounds = data.rounds || [];
             tiebreakerActive = data.tiebreakerActive || false;
             tournamentStarted = data.tournamentStarted || false;
-            matchIdCounter = data.matchIdCounter || 0;
             maxLosses = format === 'single' ? 1 : 2;
             currentRoundIndex = rounds.length - 1;
             document.getElementById('format').value = format;
+            document.getElementById('protectedTables').value = protectedTables;
             if (tournamentStarted) {
                 document.getElementById('preStartInput').style.display = 'none';
                 document.getElementById('playersList').style.display = 'none';
