@@ -375,7 +375,7 @@
                         if (byeP) byeP.byes -= 1;
                     }
                     round.splice(byeIndex, 1);
-                    round.push({ p1: {type: 'player', name: byeName}, p2: {type: 'player', name: newPlayer.name}, winner: null, id: matchIdCounter++ });
+                    round.push({ p1: {type: 'player', name: byeName}, p2: {type: 'player', name: newPlayer.name}, winner: null, id: matchIdCounter++, ignoreAuto: false });
                 } else {
                     const undecided = round.filter(item => item.type !== 'bye' && item.winner === null && resolve(item.p1) && resolve(item.p2));
                     if (undecided.length === 0) {
@@ -393,7 +393,7 @@
                         if (byeP) byeP.byes += 1;
                         round.splice(matchIndex, 1);
                         round.push({ type: 'bye', source: {type: 'player', name: byeName}, id: matchIdCounter++ });
-                        round.push({ p1: {type: 'player', name: oppName}, p2: {type: 'player', name: newPlayer.name}, winner: null, id: matchIdCounter++ });
+                        round.push({ p1: {type: 'player', name: oppName}, p2: {type: 'player', name: newPlayer.name}, winner: null, id: matchIdCounter++, ignoreAuto: false });
                     }
                 }
             }
@@ -478,8 +478,8 @@
             const item = findItemById(source.itemId);
             if (!item || item.winner === null) return null;
             let resolvedName;
-            const p1Name = resolve(item.p1, true);
-            const p2Name = resolve(item.p2, true);
+            const p1Name = resolve(item.p1, ignoreElim);
+            const p2Name = resolve(item.p2, ignoreElim);
             if (source.type === 'winner_of') {
                 resolvedName = item.winner;
             } else if (source.type === 'loser_of') {
@@ -510,7 +510,7 @@
         function propagateAutoWins() {
             rounds.forEach(round => {
                 round.forEach(item => {
-                    if (item.type === 'bye' || item.winner !== null) return;
+                    if (item.type === 'bye' || item.winner !== null || item.ignoreAuto) return;
                     const p1n = resolve(item.p1);
                     const p2n = resolve(item.p2);
                     const p1Disp = getDisplayName(item.p1);
@@ -605,7 +605,8 @@
                     p1: bestShuffle[i],
                     p2: bestShuffle[i + 1],
                     winner: null,
-                    id: matchIdCounter++
+                    id: matchIdCounter++,
+                    ignoreAuto: false
                 });
             }
             rounds.push(newRound);
@@ -682,7 +683,7 @@
                         const byeItem = round[byeIndex];
                         const byeName = resolve(byeItem.source);
                         round.splice(byeIndex, 1);
-                        round.push({p1: {type: 'player', name: byeName}, p2: {type: 'player', name: opponent}, winner: null, id: matchIdCounter++});
+                        round.push({p1: {type: 'player', name: byeName}, p2: {type: 'player', name: opponent}, winner: null, id: matchIdCounter++, ignoreAuto: false});
                         const byeP = players.find(p => p.name === byeName);
                         if (byeP) byeP.byes -= 1;
                     } else {
@@ -720,24 +721,25 @@
                     } else {
                         const p1Disp = getDisplayName(item.p1);
                         const p2Disp = getDisplayName(item.p2);
-                        const p1Name = resolve(item.p1);
-                        const p2Name = resolve(item.p2);
-                        const isP1Valid = p1Name !== null;
-                        const isP2Valid = p2Name !== null;
-                        const isUndecided = item.winner === null;
-                        itemDiv.className = 'match';
-                        const p1Class = (item.winner === p1Name ? 'winner ' : '') + 'player-line' + (isP1Valid ? ' clickable' : '');
-                        const p2Class = (item.winner === p2Name ? 'winner ' : '') + 'player-line' + (isP2Valid ? ' clickable' : '');
+                        const p1Name = resolve(item.p1, true);
+                        const p2Name = resolve(item.p2, true);
+                        const isP1Clickable = p1Disp !== 'TBD' && p1Name !== null;
+                        const isP2Clickable = p2Disp !== 'TBD' && p2Name !== null;
+                        itemDiv.className = 'match' + ((isP1Clickable || isP2Clickable) ? ' clickable' : '');
+                        const p1Class = (item.winner === p1Name ? 'winner ' : '') + 'player-line' + (isP1Clickable ? ' clickable' : '');
+                        const p2Class = (item.winner === p2Name ? 'winner ' : '') + 'player-line' + (isP2Clickable ? ' clickable' : '');
                         const p1Div = document.createElement('div');
                         p1Div.className = p1Class;
                         p1Div.textContent = p1Disp;
                         p1Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (isP1Valid) {
+                            if (isP1Clickable) {
                                 if (item.winner === p1Name) {
                                     item.winner = null;
+                                    item.ignoreAuto = true;
                                 } else {
                                     item.winner = p1Name;
+                                    item.ignoreAuto = false;
                                 }
                                 renderAll();
                                 saveState();
@@ -751,11 +753,13 @@
                         p2Div.textContent = p2Disp;
                         p2Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (isP2Valid) {
+                            if (isP2Clickable) {
                                 if (item.winner === p2Name) {
                                     item.winner = null;
+                                    item.ignoreAuto = true;
                                 } else {
                                     item.winner = p2Name;
+                                    item.ignoreAuto = false;
                                 }
                                 renderAll();
                                 saveState();
@@ -803,7 +807,8 @@
                         p1: {type: 'player', name: losers[0]},
                         p2: {type: 'player', name: losers[1]},
                         winner: null,
-                        id: matchIdCounter++
+                        id: matchIdCounter++,
+                        ignoreAuto: false
                     }];
                     rounds.push(tieRound);
                     currentRoundIndex = rounds.length - 1;
@@ -820,7 +825,7 @@
                 const p2 = resolve(finalMatch.p2, true);
                 const second = finalMatch.winner === p1 ? p2 : p1;
                 podiumDiv.innerHTML += `<div>1st Place: ${first}</div>`;
-                podiumDiv.innerHTML += `<div>2nd Place: ${second}</div>`;
+                if (second) podiumDiv.innerHTML += `<div>2nd Place: ${second}</div>`;
             }
             if (tiebreakerActive) {
                 const tieRound = rounds[rounds.length - 1];
@@ -831,7 +836,7 @@
                     const p2 = resolve(tieMatch.p2, true);
                     const fourth = tieMatch.winner === p1 ? p2 : p1;
                     podiumDiv.innerHTML += `<div>3rd Place: ${third}</div>`;
-                    podiumDiv.innerHTML += `<div>4th Place: ${fourth}</div>`;
+                    if (fourth) podiumDiv.innerHTML += `<div>4th Place: ${fourth}</div>`;
                 }
             }
             podiumDiv.style.display = 'block';
