@@ -368,26 +368,31 @@
                 let byeIndex = round.findIndex(item => item.type === 'bye');
                 if (byeIndex !== -1) {
                     const byeItem = round[byeIndex];
-                    const byeP = players.find(p => p.name === byeItem.player);
-                    if (byeP) byeP.byes -= 1;
+                    const byeName = resolve(byeItem.source);
+                    if (byeName) {
+                        const byeP = players.find(p => p.name === byeName);
+                        if (byeP) byeP.byes -= 1;
+                    }
                     round.splice(byeIndex, 1);
-                    round.push({ p1: byeItem.player, p2: newPlayer.name, winner: null });
+                    round.push({ p1: {type: 'player', name: byeName}, p2: {type: 'player', name: newPlayer.name}, winner: null });
                 } else {
-                    const undecided = round.filter(item => item.type !== 'bye' && item.winner === null);
+                    const undecided = round.filter(item => item.type !== 'bye' && item.winner === null && resolve(item.p1) && resolve(item.p2));
                     if (undecided.length === 0) {
                         alert('Cannot add to current round, all matches decided. Player will join next round.');
                     } else {
                         const randMatch = undecided[Math.floor(Math.random() * undecided.length)];
                         const matchIndex = round.indexOf(randMatch);
-                        const playersInMatch = [randMatch.p1, randMatch.p2];
+                        const p1Name = resolve(randMatch.p1);
+                        const p2Name = resolve(randMatch.p2);
+                        const playersInMatch = [p1Name, p2Name];
                         const byeIdx = Math.floor(Math.random() * 2);
                         const byeName = playersInMatch[byeIdx];
                         const oppName = playersInMatch[1 - byeIdx];
                         const byeP = players.find(p => p.name === byeName);
                         if (byeP) byeP.byes += 1;
                         round.splice(matchIndex, 1);
-                        round.push({ type: 'bye', player: byeName });
-                        round.push({ p1: oppName, p2: newPlayer.name, winner: null });
+                        round.push({ type: 'bye', source: {type: 'player', name: byeName} });
+                        round.push({ p1: {type: 'player', name: oppName}, p2: {type: 'player', name: newPlayer.name}, winner: null });
                     }
                 }
             }
@@ -444,8 +449,10 @@
             });
             const busy = new Set();
             undecided.forEach(m => {
-                busy.add(m.p1);
-                busy.add(m.p2);
+                const p1 = resolve(m.p1);
+                const p2 = resolve(m.p2);
+                if (p1) busy.add(p1);
+                if (p2) busy.add(p2);
             });
             return getActivePlayers().filter(p => !busy.has(p.name));
         }
@@ -453,36 +460,60 @@
             return round.every(item => item.type === 'bye' || item.winner !== null);
         }
         function generateNextRound() {
+            let active = getActivePlayers();
+            if (active.length <= 1) {
+                checkForPodium();
+                return;
+            }
             let ready = getReadyPlayers();
-            if (ready.length < 2) return;
+            let undecided = [];
+            rounds.forEach(round => {
+                round.forEach(item => {
+                    if (item.type !== 'bye' && item.winner === null) {
+                        undecided.push(item);
+                    }
+                });
+            });
+            let pendingSources = undecided.map(item => ({type: 'winner_of', item}));
+            let readySources = ready.map(p => ({type: 'player', name: p.name}));
+            let pairingActive = readySources.concat(pendingSources);
             let pastMatches = new Set();
             rounds.forEach(round => {
                 round.forEach(item => {
                     if (item.type !== 'bye' && item.winner) {
-                        let pair = [item.p1, item.p2].sort().join('-');
+                        let pair = [resolve(item.p1), resolve(item.p2)].sort().join('-');
                         pastMatches.add(pair);
                     }
                 });
             });
-            const newItems = [];
-            let byePlayer = null;
-            let pairingActive = [...ready];
-            if (ready.length % 2 === 1) {
-                const minByes = Math.min(...ready.map(p => p.byes));
-                const candidates = ready.filter(p => p.byes === minByes);
-                byePlayer = candidates[Math.floor(Math.random() * candidates.length)];
-                byePlayer.byes += 1;
-                newItems.push({type: 'bye', player: byePlayer.name});
-                pairingActive = ready.filter(p => p.name !== byePlayer.name);
+            let byeSource = null;
+            let pairing = [...pairingActive];
+            if (pairing.length % 2 === 1) {
+                const minByes = Math.min(...active.map(p => p.byes));
+                const candidates = active.filter(p => p.byes === minByes);
+                const byeP = candidates[Math.floor(Math.random() * candidates.length)];
+                let byeS = readySources.find(s => s.name === byeP.name);
+                if (!byeS) {
+                    const item = undecided.find(item => resolve(item.p1) === byeP.name || resolve(item.p2) === byeP.name);
+                    byeS = {type: 'winner_of', item};
+                }
+                byeSource = byeS;
+                pairing = pairing.filter(s => s !== byeS);
             }
             let bestShuffle = null;
             let minRematches = Infinity;
             for (let attempt = 0; attempt < 100; attempt++) {
-                const shuffled = [...pairingActive].sort(() => Math.random() - 0.5);
+                const shuffled = [...pairing].sort(() => Math.random() - 0.5);
                 let rematches = 0;
                 for (let i = 0; i < shuffled.length; i += 2) {
-                    let pair = [shuffled[i].name, shuffled[i+1].name].sort().join('-');
-                    if (pastMatches.has(pair)) rematches++;
+                    const s1 = shuffled[i];
+                    const n1 = resolve(s1);
+                    const s2 = shuffled[i + 1];
+                    const n2 = resolve(s2);
+                    if (n1 && n2) {
+                        let pair = [n1, n2].sort().join('-');
+                        if (pastMatches.has(pair)) rematches++;
+                    }
                 }
                 if (rematches < minRematches) {
                     minRematches = rematches;
@@ -490,31 +521,48 @@
                     if (minRematches === 0) break;
                 }
             }
+            const newRound = [];
+            if (byeSource) {
+                newRound.push({type: 'bye', source: byeSource});
+            }
             for (let i = 0; i < bestShuffle.length; i += 2) {
-                newItems.push({
-                    p1: bestShuffle[i].name,
-                    p2: bestShuffle[i + 1].name,
+                newRound.push({
+                    p1: bestShuffle[i],
+                    p2: bestShuffle[i + 1],
                     winner: null
                 });
             }
-            if (newItems.length > 0) {
-                rounds.push(newItems);
-                currentRoundIndex = rounds.length - 1;
-            }
+            rounds.push(newRound);
+            currentRoundIndex = rounds.length - 1;
             renderAll();
             saveState();
+        }
+        function resolve(source) {
+            if (source.type === 'player') return source.name;
+            if (source.type === 'winner_of') {
+                const item = source.item;
+                if (item.winner) return item.winner;
+                return null;
+            }
         }
         function applyMatchResults() {
             players.forEach(p => {
                 p.losses = 0;
                 p.wins = 0;
+                p.byes = 0;
             });
             rounds.forEach((round, roundIdx) => {
                 if (tiebreakerActive && roundIdx === rounds.length - 1) return;
                 round.forEach(item => {
-                    if (item.type !== 'bye' && item.winner) {
+                    if (item.type === 'bye') {
+                        const name = resolve(item.source);
+                        if (name) {
+                            const p = players.find(p => p.name === name);
+                            if (p) p.byes += 1;
+                        }
+                    } else if (item.winner) {
                         const winnerP = players.find(p => p.name === item.winner);
-                        const loserName = item.winner === item.p1 ? item.p2 : item.p1;
+                        const loserName = item.winner === resolve(item.p1) ? resolve(item.p2) : resolve(item.p1);
                         const loser = players.find(p => p.name === loserName);
                         if (winnerP) winnerP.wins += 1;
                         if (loser) loser.losses += 1;
@@ -556,21 +604,22 @@
             if (currentRoundIndex >= 0 && !isRoundComplete(rounds[currentRoundIndex])) {
                 let round = rounds[currentRoundIndex];
                 let byeIndex = round.findIndex(item => item.type === 'bye');
-                let matchIndex = round.findIndex(item => item.type !== 'bye' && (item.p1 === name || item.p2 === name));
+                let matchIndex = round.findIndex(item => item.type !== 'bye' && (resolve(item.p1) === name || resolve(item.p2) === name));
                 if (matchIndex > -1) {
                     const match = round[matchIndex];
-                    const opponent = match.p1 === name ? match.p2 : match.p1;
+                    const opponent = resolve(match.p1) === name ? resolve(match.p2) : resolve(match.p1);
                     round.splice(matchIndex, 1);
                     if (byeIndex > -1) {
-                        const byePlayerName = round[byeIndex].player;
+                        const byeItem = round[byeIndex];
+                        const byeName = resolve(byeItem.source);
                         round.splice(byeIndex, 1);
-                        round.push({p1: byePlayerName, p2: opponent, winner: null});
-                        const byeP = players.find(p => p.name === byePlayerName);
+                        round.push({p1: {type: 'player', name: byeName}, p2: {type: 'player', name: opponent}, winner: null});
+                        const byeP = players.find(p => p.name === byeName);
                         if (byeP) byeP.byes -= 1;
                     } else {
-                        round.push({type: 'bye', player: opponent});
+                        round.push({type: 'bye', source: {type: 'player', name: opponent}});
                     }
-                } else if (byeIndex > -1 && round[byeIndex].player === name) {
+                } else if (byeIndex > -1 && resolve(round[byeIndex].source) === name) {
                     round.splice(byeIndex, 1);
                 }
             }
@@ -594,22 +643,26 @@
                     const itemDiv = document.createElement('div');
                     if (item.type === 'bye') {
                         itemDiv.className = 'match bye-match';
+                        const player = resolve(item.source) || 'TBD';
                         itemDiv.innerHTML = `
-                            <div class="player-line">${item.player}</div>
+                            <div class="player-line">${player}</div>
                             <div class="bye">Bye</div>
                         `;
                     } else {
+                        const p1Name = resolve(item.p1) || 'TBD';
+                        const p2Name = resolve(item.p2) || 'TBD';
                         const isUndecided = item.winner === null;
-                        itemDiv.className = 'match' + (isUndecided ? ' clickable' : '');
-                        const p1Class = item.winner === item.p1 ? 'winner player-line' : 'player-line' + (isUndecided ? ' clickable' : '');
-                        const p2Class = item.winner === item.p2 ? 'winner player-line' : 'player-line' + (isUndecided ? ' clickable' : '');
+                        const isClickable = p1Name !== 'TBD' && p2Name !== 'TBD' && isUndecided;
+                        itemDiv.className = 'match' + (isClickable ? ' clickable' : '');
+                        const p1Class = item.winner === p1Name ? 'winner player-line' : 'player-line' + (isClickable ? ' clickable' : '');
+                        const p2Class = item.winner === p2Name ? 'winner player-line' : 'player-line' + (isClickable ? ' clickable' : '');
                         const p1Div = document.createElement('div');
                         p1Div.className = p1Class;
-                        p1Div.textContent = item.p1;
+                        p1Div.textContent = p1Name;
                         p1Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (item.winner === null) {
-                                item.winner = item.p1;
+                            if (isClickable) {
+                                item.winner = p1Name;
                                 renderAll();
                                 saveState();
                             }
@@ -619,11 +672,11 @@
                         vsDiv.textContent = 'vs';
                         const p2Div = document.createElement('div');
                         p2Div.className = p2Class;
-                        p2Div.textContent = item.p2;
+                        p2Div.textContent = p2Name;
                         p2Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (item.winner === null) {
-                                item.winner = item.p2;
+                            if (isClickable) {
+                                item.winner = p2Name;
                                 renderAll();
                                 saveState();
                             }
@@ -657,15 +710,15 @@
                 const losers = [];
                 prevRound.forEach(item => {
                     if (item.type !== 'bye' && item.winner) {
-                        const loserName = item.winner === item.p1 ? item.p2 : item.p1;
+                        const loserName = item.winner === resolve(item.p1) ? resolve(item.p2) : resolve(item.p1);
                         losers.push(loserName);
                     }
                 });
                 if (losers.length === 2) {
                     tiebreakerActive = true;
                     const tieRound = [{
-                        p1: losers[0],
-                        p2: losers[1],
+                        p1: {type: 'player', name: losers[0]},
+                        p2: {type: 'player', name: losers[1]},
                         winner: null
                     }];
                     rounds.push(tieRound);
@@ -679,7 +732,7 @@
             const finalMatch = finalRound.find(item => item.type !== 'bye');
             if (finalMatch && finalMatch.winner) {
                 const first = finalMatch.winner;
-                const second = finalMatch.winner === finalMatch.p1 ? finalMatch.p2 : finalMatch.p1;
+                const second = finalMatch.winner === resolve(finalMatch.p1) ? resolve(finalMatch.p2) : resolve(finalMatch.p1);
                 podiumDiv.innerHTML += `<div>1st Place: ${first}</div>`;
                 podiumDiv.innerHTML += `<div>2nd Place: ${second}</div>`;
             }
@@ -688,7 +741,7 @@
                 const tieMatch = tieRound.find(item => item.type !== 'bye');
                 if (tieMatch && tieMatch.winner) {
                     const third = tieMatch.winner;
-                    const fourth = tieMatch.winner === tieMatch.p1 ? tieMatch.p2 : tieMatch.p1;
+                    const fourth = tieMatch.winner === resolve(tieMatch.p1) ? resolve(tieMatch.p2) : resolve(tieMatch.p1);
                     podiumDiv.innerHTML += `<div>3rd Place: ${third}</div>`;
                     podiumDiv.innerHTML += `<div>4th Place: ${fourth}</div>`;
                 }
