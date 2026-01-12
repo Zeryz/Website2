@@ -469,25 +469,25 @@
             }
             return null;
         }
-        function resolve(source) {
+        function resolve(source, ignoreElim = false) {
             if (source.type === 'player') {
                 const p = players.find(p => p.name === source.name);
-                if (p && p.losses < maxLosses) return source.name;
+                if (p && (ignoreElim || p.losses < maxLosses)) return source.name;
                 return null;
             }
             const item = findItemById(source.itemId);
             if (!item || item.winner === null) return null;
             let resolvedName;
+            const p1Name = resolve(item.p1, true);
+            const p2Name = resolve(item.p2, true);
             if (source.type === 'winner_of') {
                 resolvedName = item.winner;
             } else if (source.type === 'loser_of') {
-                const p1Name = resolve(item.p1);
-                const p2Name = resolve(item.p2);
                 resolvedName = item.winner === p1Name ? p2Name : p1Name;
             }
             if (resolvedName) {
                 const p = players.find(p => p.name === resolvedName);
-                if (p && p.losses < maxLosses) return resolvedName;
+                if (p && (ignoreElim || p.losses < maxLosses)) return resolvedName;
             }
             return null;
         }
@@ -497,9 +497,14 @@
             return !item || item.winner === null;
         }
         function getDisplayName(source) {
-            const name = resolve(source);
-            if (name) return name;
-            if (isTBD(source)) return 'TBD';
+            const name = resolve(source, true);
+            if (name) {
+                const p = players.find(p => p.name === name);
+                if (p.losses >= maxLosses) return `Eliminated (${name})`;
+                return name;
+            } else if (isTBD(source)) {
+                return 'TBD';
+            }
             return 'Eliminated';
         }
         function propagateAutoWins() {
@@ -510,9 +515,9 @@
                     const p2n = resolve(item.p2);
                     const p1Disp = getDisplayName(item.p1);
                     const p2Disp = getDisplayName(item.p2);
-                    if (p1n === null && p2n !== null && p1Disp === 'Eliminated') {
+                    if (p1n === null && p2n !== null && p1Disp.startsWith('Eliminated')) {
                         item.winner = p2n;
-                    } else if (p2n === null && p1n !== null && p2Disp === 'Eliminated') {
+                    } else if (p2n === null && p1n !== null && p2Disp.startsWith('Eliminated')) {
                         item.winner = p1n;
                     }
                 });
@@ -715,18 +720,25 @@
                     } else {
                         const p1Disp = getDisplayName(item.p1);
                         const p2Disp = getDisplayName(item.p2);
+                        const p1Name = resolve(item.p1);
+                        const p2Name = resolve(item.p2);
+                        const isP1Valid = p1Name !== null;
+                        const isP2Valid = p2Name !== null;
                         const isUndecided = item.winner === null;
-                        const isClickable = p1Disp !== 'TBD' && p1Disp !== 'Eliminated' && p2Disp !== 'TBD' && p2Disp !== 'Eliminated' && isUndecided;
-                        itemDiv.className = 'match' + (isClickable ? ' clickable' : '');
-                        const p1Class = item.winner === p1Disp ? 'winner player-line' : 'player-line' + (isClickable ? ' clickable' : '');
-                        const p2Class = item.winner === p2Disp ? 'winner player-line' : 'player-line' + (isClickable ? ' clickable' : '');
+                        itemDiv.className = 'match';
+                        const p1Class = (item.winner === p1Name ? 'winner ' : '') + 'player-line' + (isP1Valid ? ' clickable' : '');
+                        const p2Class = (item.winner === p2Name ? 'winner ' : '') + 'player-line' + (isP2Valid ? ' clickable' : '');
                         const p1Div = document.createElement('div');
                         p1Div.className = p1Class;
                         p1Div.textContent = p1Disp;
                         p1Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (isClickable) {
-                                item.winner = resolve(item.p1);
+                            if (isP1Valid) {
+                                if (item.winner === p1Name) {
+                                    item.winner = null;
+                                } else {
+                                    item.winner = p1Name;
+                                }
                                 renderAll();
                                 saveState();
                             }
@@ -739,8 +751,12 @@
                         p2Div.textContent = p2Disp;
                         p2Div.onclick = (e) => {
                             e.stopPropagation();
-                            if (isClickable) {
-                                item.winner = resolve(item.p2);
+                            if (isP2Valid) {
+                                if (item.winner === p2Name) {
+                                    item.winner = null;
+                                } else {
+                                    item.winner = p2Name;
+                                }
                                 renderAll();
                                 saveState();
                             }
@@ -775,7 +791,9 @@
                 const losers = [];
                 prevRound.forEach(item => {
                     if (item.type !== 'bye' && item.winner) {
-                        const loserName = item.winner === resolve(item.p1) ? resolve(item.p2) : resolve(item.p1);
+                        const p1 = resolve(item.p1, true);
+                        const p2 = resolve(item.p2, true);
+                        const loserName = item.winner === p1 ? p2 : p1;
                         if (loserName) losers.push(loserName);
                     }
                 });
@@ -798,7 +816,9 @@
             const finalMatch = finalRound.find(item => item.type !== 'bye');
             if (finalMatch && finalMatch.winner) {
                 const first = finalMatch.winner;
-                const second = finalMatch.winner === resolve(finalMatch.p1) ? resolve(finalMatch.p2) : resolve(finalMatch.p1);
+                const p1 = resolve(finalMatch.p1, true);
+                const p2 = resolve(finalMatch.p2, true);
+                const second = finalMatch.winner === p1 ? p2 : p1;
                 podiumDiv.innerHTML += `<div>1st Place: ${first}</div>`;
                 podiumDiv.innerHTML += `<div>2nd Place: ${second}</div>`;
             }
@@ -807,7 +827,9 @@
                 const tieMatch = tieRound.find(item => item.type !== 'bye');
                 if (tieMatch && tieMatch.winner) {
                     const third = tieMatch.winner;
-                    const fourth = tieMatch.winner === resolve(tieMatch.p1) ? resolve(tieMatch.p2) : resolve(tieMatch.p1);
+                    const p1 = resolve(tieMatch.p1, true);
+                    const p2 = resolve(tieMatch.p2, true);
+                    const fourth = tieMatch.winner === p1 ? p2 : p1;
                     podiumDiv.innerHTML += `<div>3rd Place: ${third}</div>`;
                     podiumDiv.innerHTML += `<div>4th Place: ${fourth}</div>`;
                 }
