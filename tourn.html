@@ -525,12 +525,17 @@
             while (changed) {
                 changed = false;
                 const toRemove = [];
-                rounds.forEach(round => {
+                const freeAdvances = [];
+                rounds.forEach((round, rIndex) => {
+                    if (rIndex < rounds.length - 1) return; // Only process the latest round for consolidation
                     round.forEach(item => {
                         if (item.type === 'bye') {
+                            const sourceName = resolve(item.source);
                             const sourceDisp = getDisplayName(item.source);
                             if (sourceDisp.startsWith('Eliminated')) {
                                 toRemove.push({round, item});
+                            } else if (sourceName) {
+                                freeAdvances.push({type: 'bye', player: sourceName, item});
                             }
                             return;
                         }
@@ -541,9 +546,13 @@
                         const p2Disp = getDisplayName(item.p2);
                         if (p1n === null && p2n !== null && p1Disp.startsWith('Eliminated')) {
                             item.winner = p2n;
+                            item.ignoreAuto = true; // Mark as auto to distinguish
+                            freeAdvances.push({type: 'auto_win', player: p2n, item});
                             changed = true;
                         } else if (p2n === null && p1n !== null && p2Disp.startsWith('Eliminated')) {
                             item.winner = p1n;
+                            item.ignoreAuto = true;
+                            freeAdvances.push({type: 'auto_win', player: p1n, item});
                             changed = true;
                         }
                     });
@@ -555,6 +564,34 @@
                     }
                 });
                 if (toRemove.length > 0) changed = true;
+
+                // Consolidate free advances in the latest round
+                if (freeAdvances.length >= 2) {
+                    shuffle(freeAdvances);
+                    for (let i = 0; i < freeAdvances.length - (freeAdvances.length % 2); i += 2) {
+                        const fa1 = freeAdvances[i];
+                        const fa2 = freeAdvances[i + 1];
+                        const round = rounds[rounds.length - 1];
+                        // Remove original items
+                        const index1 = round.indexOf(fa1.item);
+                        if (index1 > -1) round.splice(index1, 1);
+                        const index2 = round.indexOf(fa2.item);
+                        if (index2 > -1) round.splice(index2, 1);
+                        // If they were auto-wins, reset winner since they'll play
+                        if (fa1.type === 'auto_win') fa1.item.winner = null;
+                        if (fa2.type === 'auto_win') fa2.item.winner = null;
+                        // Create new match
+                        round.push({
+                            p1: {type: 'player', name: fa1.player},
+                            p2: {type: 'player', name: fa2.player},
+                            winner: null,
+                            id: matchIdCounter++,
+                            ignoreAuto: false
+                        });
+                        changed = true;
+                    }
+                    // If odd number left, leave the last as bye or auto-win
+                }
             }
         }
 
