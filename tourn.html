@@ -525,50 +525,49 @@
                         }
                     });
                 });
-                const round = rounds[rounds.length - 1];
-                for (let itemIndex = round.length - 1; itemIndex >= 0; itemIndex--) {
-                    const item = round[itemIndex];
-                    if (item.type === 'bye') {
-                        const sourceName = resolve(item.source);
-                        const sourceNameIgnore = resolve(item.source, true);
-                        if (sourceName === null && sourceNameIgnore !== null) {
-                            toRemove.push({round, item});
-                        } else if (sourceName) {
-                            freeAdvances.push({type: 'bye', player: sourceName, item});
+                rounds.forEach(round => {
+                    for (let itemIndex = round.length - 1; itemIndex >= 0; itemIndex--) {
+                        const item = round[itemIndex];
+                        if (item.type === 'bye') {
+                            const sourceName = resolve(item.source);
+                            const sourceNameIgnore = resolve(item.source, true);
+                            if (sourceName === null && sourceNameIgnore !== null) {
+                                toRemove.push({round, item});
+                            } else if (sourceName) {
+                                freeAdvances.push({type: 'bye', player: sourceName, item, round});
+                            }
+                            continue;
                         }
-                        continue;
+                        if (item.winner !== null || item.ignoreAuto) continue;
+                        const p1n = resolve(item.p1);
+                        const p2n = resolve(item.p2);
+                        const p1Disp = getDisplayName(item.p1);
+                        const p2Disp = getDisplayName(item.p2);
+                        if (p1n === null && !isTBD(item.p1) && p2n !== null) {
+                            round.splice(itemIndex, 1);
+                            round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
+                            changed = true;
+                        } else if (p2n === null && !isTBD(item.p2) && p1n !== null) {
+                            round.splice(itemIndex, 1);
+                            round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
+                            changed = true;
+                        } else if (p1n === null && !isTBD(item.p1) && p2n === null && !isTBD(item.p2)) {
+                            round.splice(itemIndex, 1);
+                            changed = true;
+                        }
                     }
-                    if (item.winner !== null || item.ignoreAuto) continue;
-                    const p1n = resolve(item.p1);
-                    const p2n = resolve(item.p2);
-                    const p1Disp = getDisplayName(item.p1);
-                    const p2Disp = getDisplayName(item.p2);
-                    const p1NameIgnore = resolve(item.p1, true);
-                    const p2NameIgnore = resolve(item.p2, true);
-                    if (p1n === null && p2n !== null && p1Disp === 'Eliminated') {
-                        round.splice(itemIndex, 1);
-                        round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
-                        changed = true;
-                    } else if (p2n === null && p1n !== null && p2Disp === 'Eliminated') {
-                        round.splice(itemIndex, 1);
-                        round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
-                        changed = true;
-                    } else if (p1n === null && p2n === null && p1Disp === 'Eliminated' && p2Disp === 'Eliminated') {
-                        round.splice(itemIndex, 1);
-                        changed = true;
-                    }
-                }
+                });
                 toRemove.forEach(({round, item}) => {
                     const index = round.indexOf(item);
                     if (index > -1) {
                         round.splice(index, 1);
+                        changed = true;
                     }
                 });
-                if (toRemove.length > 0) changed = true;
                 if (freeAdvances.length >= 2) {
                     let bestShuffle = null;
                     let minRematches = Infinity;
-                    for (let attempt = 0; attempt < 100; attempt++) {
+                    for (let attempt = 0; attempt < 200; attempt++) {
                         const shuffled = shuffle([...freeAdvances]);
                         let rematches = 0;
                         for (let i = 0; i < shuffled.length - (shuffled.length % 2); i += 2) {
@@ -585,21 +584,28 @@
                             if (minRematches === 0) break;
                         }
                     }
+                    const lastRound = rounds[rounds.length - 1];
                     for (let i = 0; i < bestShuffle.length - (bestShuffle.length % 2); i += 2) {
                         const fa1 = bestShuffle[i];
                         const fa2 = bestShuffle[i + 1];
-                        const round = rounds[rounds.length - 1];
-                        const index1 = round.indexOf(fa1.item);
-                        if (index1 > -1) round.splice(index1, 1);
-                        const index2 = round.indexOf(fa2.item);
-                        if (index2 > -1) round.splice(index2, 1);
-                        round.push({
+                        const index1 = fa1.round.indexOf(fa1.item);
+                        if (index1 > -1) fa1.round.splice(index1, 1);
+                        const index2 = fa2.round.indexOf(fa2.item);
+                        if (index2 > -1) fa2.round.splice(index2, 1);
+                        lastRound.push({
                             p1: {type: 'player', name: fa1.player},
                             p2: {type: 'player', name: fa2.player},
                             winner: null,
                             id: matchIdCounter++,
                             ignoreAuto: false
                         });
+                        changed = true;
+                    }
+                    if (bestShuffle.length % 2 === 1) {
+                        const fa = bestShuffle[bestShuffle.length - 1];
+                        const index = fa.round.indexOf(fa.item);
+                        if (index > -1) fa.round.splice(index, 1);
+                        lastRound.push({type: 'bye', source: {type: 'player', name: fa.player}, id: matchIdCounter++});
                         changed = true;
                     }
                 }
@@ -695,7 +701,7 @@
             }
             let bestShuffle = null;
             let minRematches = Infinity;
-            for (let attempt = 0; attempt < 100; attempt++) {
+            for (let attempt = 0; attempt < 200; attempt++) {
                 const shuffled = shuffle([...pairingActive]);
                 let rematches = 0;
                 for (let i = 0; i < shuffled.length; i += 2) {
@@ -756,7 +762,7 @@
                         const p2n = resolve(item.p2, true);
                         const loserName = item.winner === p1n ? p2n : p1n;
                         const loser = players.find(p => p.name === loserName);
-                        if (loser) {
+                        if (loser && loser.losses < maxLosses) {
                             loser.losses += 1;
                             if (winnerP) {
                                 winnerP.lastOpponent = loserName;
@@ -828,7 +834,6 @@
                     round.splice(byeIndex, 1);
                 }
             }
-            propagateAutoWins();
             renderAll();
             saveState();
         }
@@ -864,8 +869,8 @@
                         const p2p = players.find(p => p.name === p2Name);
                         const isP1Elim = p1p && p1p.losses >= maxLosses;
                         const isP2Elim = p2p && p2p.losses >= maxLosses;
-                        const isP1Clickable = p1Disp !== 'TBD' && p1Name !== null;
-                        const isP2Clickable = p2Disp !== 'TBD' && p2Name !== null;
+                        const isP1Clickable = p1Disp !== 'TBD' && resolve(item.p1) !== null;
+                        const isP2Clickable = p2Disp !== 'TBD' && resolve(item.p2) !== null;
                         itemDiv.className = 'match' + ((isP1Clickable || isP2Clickable) ? ' clickable' : '');
                         let p1Class = (item.winner === p1Name ? 'winner ' : '') + 'player-line' + (isP1Elim ? ' eliminated' : '') + (isP1Clickable ? ' clickable' : '');
                         let p2Class = (item.winner === p2Name ? 'winner ' : '') + 'player-line' + (isP2Elim ? ' eliminated' : '') + (isP2Clickable ? ' clickable' : '');
@@ -882,7 +887,6 @@
                                     item.winner = p1Name;
                                     item.ignoreAuto = isP1Elim;
                                 }
-                                propagateAutoWins(); // Trigger propagation immediately after winner change
                                 renderAll();
                                 saveState();
                             }
@@ -903,7 +907,6 @@
                                     item.winner = p2Name;
                                     item.ignoreAuto = isP2Elim;
                                 }
-                                propagateAutoWins(); // Trigger propagation immediately after winner change
                                 renderAll();
                                 saveState();
                             }
