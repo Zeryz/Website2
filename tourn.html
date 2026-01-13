@@ -38,7 +38,7 @@
             text-decoration: underline;
         }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
-     
+    
         .setup {
             background: #222;
             padding: 20px;
@@ -334,7 +334,7 @@
     </div>
     <script>
         let playerNames = [];
-        let players = []; // {name, losses: 0, byes: 0, wins: 0, lastOpponent: null, eliminated: false}
+        let players = []; // {name, losses: 0, byes: 0, wins: 0}
         let format = 'double';
         let maxLosses = 2;
         let rounds = [];
@@ -362,7 +362,7 @@
             if (!name || !name.trim()) return;
             name = name.trim();
             if (players.find(p => p.name === name)) return alert('Player already added!');
-            const newPlayer = { name, losses: 0, byes: 0, wins: 0, lastOpponent: null, eliminated: false };
+            const newPlayer = { name, losses: 0, byes: 0, wins: 0 };
             players.push(newPlayer);
             if (currentRoundIndex >= 0 && !isRoundComplete(rounds[currentRoundIndex])) {
                 let round = rounds[currentRoundIndex];
@@ -397,7 +397,6 @@
                     }
                 }
             }
-            propagateUpdates();
             renderAll();
             saveState();
         }
@@ -425,7 +424,7 @@
             if (playerNames.length < 2) return alert('Add at least 2 players!');
             format = document.getElementById('format').value;
             maxLosses = format === 'single' ? 1 : 2;
-            players = playerNames.map(name => ({ name, losses: 0, byes: 0, wins: 0, lastOpponent: null, eliminated: false }));
+            players = playerNames.map(name => ({ name, losses: 0, byes: 0, wins: 0 }));
             playerNames = [];
             rounds = [];
             currentRoundIndex = -1;
@@ -439,7 +438,7 @@
             generateNextRound();
         }
         function getActivePlayers() {
-            return players.filter(p => !p.eliminated && p.losses < maxLosses);
+            return players.filter(p => p.losses < maxLosses);
         }
         function getReadyPlayers() {
             const undecided = [];
@@ -473,7 +472,7 @@
         function resolve(source, ignoreElim = false) {
             if (source.type === 'player') {
                 const p = players.find(p => p.name === source.name);
-                if (p && (ignoreElim || (!p.eliminated && p.losses < maxLosses))) return source.name;
+                if (p && (ignoreElim || p.losses < maxLosses)) return source.name;
                 return null;
             }
             const item = findItemById(source.itemId);
@@ -488,7 +487,7 @@
             }
             if (resolvedName) {
                 const p = players.find(p => p.name === resolvedName);
-                if (p && (ignoreElim || (!p.eliminated && p.losses < maxLosses))) return resolvedName;
+                if (p && (ignoreElim || p.losses < maxLosses)) return resolvedName;
             }
             return null;
         }
@@ -501,138 +500,64 @@
             const name = resolve(source, true);
             if (name) {
                 const p = players.find(p => p.name === name);
-                if (p.eliminated || p.losses >= maxLosses) return `Eliminated (${name})`;
+                if (p.losses >= maxLosses) return `Eliminated (${name})`;
                 return name;
             } else if (isTBD(source)) {
                 return 'TBD';
             }
             return 'Eliminated';
         }
-        function propagateUpdates() {
-            applyMatchResults();
-            let changed = true;
-            while (changed) {
-                changed = false;
-                rounds.forEach(round => {
-                    let i = 0;
-                    while (i < round.length) {
-                        const item = round[i];
-                        if (item.type === 'bye') {
-                            const name = resolve(item.source, true);
-                            const p = players.find(p => p.name === name);
-                            if (!name || (p && (p.eliminated || p.losses >= maxLosses))) {
-                                round.splice(i, 1);
-                                changed = true;
-                                continue;
-                            }
-                        } else {
-                            const p1n = resolve(item.p1, true);
-                            const p2n = resolve(item.p2, true);
-                            const p1p = players.find(p => p.name === p1n);
-                            const p2p = players.find(p => p.name === p2n);
-                            const e1 = p1n === null || (p1p && (p1p.eliminated || p1p.losses >= maxLosses));
-                            const e2 = p2n === null || (p2p && (p2p.eliminated || p2p.losses >= maxLosses));
-                            if (e1 && e2) {
-                                round.splice(i, 1);
-                                changed = true;
-                                continue;
-                            } else if (e1 && !e2) {
-                                round[i] = { type: 'bye', source: item.p2, id: matchIdCounter++ };
-                                changed = true;
-                            } else if (e2 && !e1) {
-                                round[i] = { type: 'bye', source: item.p1, id: matchIdCounter++ };
-                                changed = true;
-                            }
-                        }
-                        i++;
+        function propagateAutoAdvances() {
+            rounds.forEach((round, rIdx) => {
+                let trivial = [];
+                let newRound = [];
+                round.forEach(item => {
+                    if (item.type === 'bye' || item.winner !== null || item.ignoreAuto) {
+                        newRound.push(item);
+                        return;
+                    }
+                    const p1n = resolve(item.p1);
+                    const p2n = resolve(item.p2);
+                    const p1Disp = getDisplayName(item.p1);
+                    const p2Disp = getDisplayName(item.p2);
+                    if (p1n === null && p1Disp.startsWith('Eliminated') && p2n !== null) {
+                        trivial.push({liveSource: item.p2, liveName: p2n});
+                    } else if (p2n === null && p2Disp.startsWith('Eliminated') && p1n !== null) {
+                        trivial.push({liveSource: item.p1, liveName: p1n});
+                    } else if (p1n === null && p2n === null) {
+                        // skip
+                    } else {
+                        newRound.push(item);
                     }
                 });
-                if (changed) applyMatchResults();
-            }
-            rounds.forEach(round => {
-                const byeSources = [];
-                let j = 0;
-                while (j < round.length) {
-                    if (round[j].type === 'bye') {
-                        const name = resolve(round[j].source);
-                        if (name) {
-                            byeSources.push(round[j].source);
-                        }
-                        round.splice(j, 1);
+                if (trivial.length > 0) {
+                    if (trivial.length === 1) {
+                        newRound.push({type: 'bye', source: trivial[0].liveSource, id: matchIdCounter++});
                     } else {
-                        j++;
+                        trivial.sort(() => Math.random() - 0.5);
+                        let liveSources = trivial.map(t => t.liveSource);
+                        let byeSource = null;
+                        if (trivial.length % 2 === 1) {
+                            const minByes = Math.min(...trivial.map(t => players.find(p => p.name === t.liveName).byes));
+                            const candidates = trivial.filter(t => players.find(p => p.name === t.liveName).byes === minByes);
+                            const byeT = candidates[Math.floor(Math.random() * candidates.length)];
+                            byeSource = byeT.liveSource;
+                            liveSources = liveSources.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
+                            newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
+                        }
+                        for (let i = 0; i < liveSources.length; i += 2) {
+                            newRound.push({
+                                p1: liveSources[i],
+                                p2: liveSources[i + 1],
+                                winner: null,
+                                id: matchIdCounter++,
+                                ignoreAuto: false
+                            });
+                        }
                     }
                 }
-                if (byeSources.length >= 2) {
-                    let byeSource = null;
-                    if (byeSources.length % 2 === 1) {
-                        const known = byeSources.filter(s => s.type === 'player');
-                        if (known.length > 0) {
-                            const knownPlayers = known.map(s => players.find(p => p.name === s.name));
-                            const minByes = Math.min(...knownPlayers.map(p => p.byes));
-                            const candidates = knownPlayers.filter(p => p.byes === minByes);
-                            const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-                            byeSource = {type: 'player', name: chosen.name};
-                            byeSources.splice(byeSources.findIndex(s => s.name === chosen.name), 1);
-                            const byeP = chosen;
-                            byeP.byes += 1;
-                        } else {
-                            const idx = Math.floor(Math.random() * byeSources.length);
-                            byeSource = byeSources.splice(idx, 1)[0];
-                        }
-                        round.push({ type: 'bye', source: byeSource, id: matchIdCounter++ });
-                    }
-                    const pastMatches = new Set();
-                    rounds.forEach(r => {
-                        r.forEach(it => {
-                            if (it.type !== 'bye' && it.winner) {
-                                const p1n = resolve(it.p1, true);
-                                const p2n = resolve(it.p2, true);
-                                if (p1n && p2n) {
-                                    const pair = [p1n, p2n].sort().join('-');
-                                    pastMatches.add(pair);
-                                }
-                            }
-                        });
-                    });
-                    let bestShuffle = null;
-                    let minScore = Infinity;
-                    for (let attempt = 0; attempt < 200; attempt++) {
-                        const shuffled = [...byeSources].sort(() => Math.random() - 0.5);
-                        let score = 0;
-                        for (let k = 0; k < shuffled.length; k += 2) {
-                            const s1 = shuffled[k];
-                            const n1 = resolve(s1, true);
-                            const s2 = shuffled[k + 1];
-                            const n2 = resolve(s2, true);
-                            if (n1 && n2) {
-                                const pair = [n1, n2].sort().join('-');
-                                if (pastMatches.has(pair)) score += 1;
-                                const p1 = players.find(p => p.name === n1);
-                                const p2 = players.find(p => p.name === n2);
-                                if (p1.lastOpponent === n2 || p2.lastOpponent === n1) score += 1;
-                            }
-                        }
-                        if (score < minScore) {
-                            minScore = score;
-                            bestShuffle = shuffled;
-                            if (minScore === 0) break;
-                        }
-                    }
-                    for (let k = 0; k < bestShuffle.length; k += 2) {
-                        round.push({
-                            p1: bestShuffle[k],
-                            p2: bestShuffle[k + 1],
-                            winner: null,
-                            id: matchIdCounter++,
-                            ignoreAuto: false
-                        });
-                    }
-                } else if (byeSources.length === 1) {
-                    round.push({ type: 'bye', source: byeSources[0], id: matchIdCounter++ });
-                }
+                rounds[rIdx] = newRound;
             });
-            propagateAutoWins();
         }
         function generateNextRound() {
             let active = getActivePlayers();
@@ -641,7 +566,6 @@
                 return;
             }
             let ready = getReadyPlayers();
-            if (ready.length < 2) return;
             let undecided = [];
             rounds.forEach(round => {
                 round.forEach(item => {
@@ -651,26 +575,22 @@
                 });
             });
             let pendingSources = [];
-            undecided.forEach(item => {
-                pendingSources.push({type: 'winner_of', itemId: item.id});
-                if (format === 'double') {
-                    const p1n = resolve(item.p1, true);
-                    const p2n = resolve(item.p2, true);
-                    const p1 = players.find(p => p.name === p1n);
-                    const p2 = players.find(p => p.name === p2n);
-                    if (p1 && p2 && !p1.eliminated && !p2.eliminated && p1.losses < maxLosses - 1 && p2.losses < maxLosses - 1) {
-                        pendingSources.push({type: 'loser_of', itemId: item.id});
-                    }
-                }
-            });
+            if (format === 'single') {
+                pendingSources = undecided.map(item => ({type: 'winner_of', itemId: item.id}));
+            } else {
+                pendingSources = undecided.flatMap(item => [
+                    {type: 'winner_of', itemId: item.id},
+                    {type: 'loser_of', itemId: item.id}
+                ]);
+            }
             let readySources = ready.map(p => ({type: 'player', name: p.name}));
             let pairingActive = readySources.concat(pendingSources);
             let pastMatches = new Set();
             rounds.forEach(round => {
                 round.forEach(item => {
                     if (item.type !== 'bye' && item.winner) {
-                        let p1n = resolve(item.p1, true);
-                        let p2n = resolve(item.p2, true);
+                        let p1n = resolve(item.p1);
+                        let p2n = resolve(item.p2);
                         if (p1n && p2n) {
                             let pair = [p1n, p2n].sort().join('-');
                             pastMatches.add(pair);
@@ -681,43 +601,39 @@
             const newRound = [];
             let byeSource = null;
             if (pairingActive.length % 2 === 1) {
-                const known = pairingActive.filter(s => s.type === 'player');
-                if (known.length > 0) {
-                    const knownPlayers = known.map(s => players.find(p => p.name === s.name));
-                    const minByes = Math.min(...knownPlayers.map(p => p.byes));
-                    const candidates = knownPlayers.filter(p => p.byes === minByes);
-                    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-                    byeSource = {type: 'player', name: chosen.name};
-                    pairingActive = pairingActive.filter(s => !(s.type === 'player' && s.name === chosen.name));
-                    chosen.byes += 1;
-                } else {
-                    const idx = Math.floor(Math.random() * pairingActive.length);
-                    byeSource = pairingActive.splice(idx, 1)[0];
+                const minByes = Math.min(...active.map(p => p.byes));
+                const candidates = ready.filter(p => p.byes === minByes);
+                if (candidates.length > 0) {
+                    const byeP = candidates[Math.floor(Math.random() * candidates.length)];
+                    byeP.byes += 1;
+                    byeSource = readySources.find(s => s.name === byeP.name);
+                } else if (pendingSources.length > 0) {
+                    byeSource = pendingSources[Math.floor(Math.random() * pendingSources.length)];
                 }
-                newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
+                if (byeSource) {
+                    pairingActive = pairingActive.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
+                    newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
+                }
             }
             let bestShuffle = null;
-            let minScore = Infinity;
-            for (let attempt = 0; attempt < 200; attempt++) {
+            let minRematches = Infinity;
+            for (let attempt = 0; attempt < 100; attempt++) {
                 const shuffled = [...pairingActive].sort(() => Math.random() - 0.5);
-                let score = 0;
+                let rematches = 0;
                 for (let i = 0; i < shuffled.length; i += 2) {
                     const s1 = shuffled[i];
-                    const n1 = resolve(s1, true);
+                    const n1 = resolve(s1);
                     const s2 = shuffled[i + 1];
-                    const n2 = resolve(s2, true);
+                    const n2 = resolve(s2);
                     if (n1 && n2) {
-                        const pair = [n1, n2].sort().join('-');
-                        if (pastMatches.has(pair)) score += 1;
-                        const p1 = players.find(p => p.name === n1);
-                        const p2 = players.find(p => p.name === n2);
-                        if (p1.lastOpponent === n2 || p2.lastOpponent === n1) score += 1;
+                        let pair = [n1, n2].sort().join('-');
+                        if (pastMatches.has(pair)) rematches++;
                     }
                 }
-                if (score < minScore) {
-                    minScore = score;
+                if (rematches < minRematches) {
+                    minRematches = rematches;
                     bestShuffle = shuffled;
-                    if (minScore === 0) break;
+                    if (minRematches === 0) break;
                 }
             }
             for (let i = 0; i < bestShuffle.length; i += 2) {
@@ -744,7 +660,7 @@
                 if (tiebreakerActive && roundIdx === rounds.length - 1) return;
                 round.forEach(item => {
                     if (item.type === 'bye') {
-                        const name = resolve(item.source, true);
+                        const name = resolve(item.source);
                         if (name) {
                             const p = players.find(p => p.name === name);
                             if (p) p.byes += 1;
@@ -755,10 +671,12 @@
                         const p2n = resolve(item.p2, true);
                         const loserName = item.winner === p1n ? p2n : p1n;
                         const loser = players.find(p => p.name === loserName);
+                        if (loser && loser.losses < maxLosses) {
+                            loser.losses += 1;
+                        }
                         if (winnerP) {
-                            if (loser && !loser.eliminated && loser.losses < maxLosses) {
+                            if (loser) {
                                 winnerP.wins += 1;
-                                loser.losses += 1;
                             } else {
                                 winnerP.byes += 1;
                             }
@@ -772,9 +690,12 @@
             div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th><th>Wins</th><th>Byes</th><th></th></tr></table>';
             const table = div.querySelector('table');
             let standingsPlayers = [...players].sort((a, b) => a.losses - b.losses || b.wins - a.wins || Math.random() - 0.5);
+            if (!tiebreakerActive) {
+                standingsPlayers = standingsPlayers.filter(p => p.losses < maxLosses);
+            }
             standingsPlayers.forEach(p => {
                 const row = document.createElement('tr');
-                const statusClass = p.eliminated || p.losses >= maxLosses ? 'eliminated' : '';
+                const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
                 row.innerHTML = `
                     <td class="${statusClass}">${p.name}</td>
                     <td>${p.losses}</td>
@@ -788,31 +709,36 @@
         function removeTournamentPlayer(name) {
             const player = players.find(p => p.name === name);
             if (!player) return;
-            let message = `Eliminate ${name}? This will label them as eliminated and preserve past scores.`;
-            if (!player.eliminated && player.losses < maxLosses) {
-                message = `You're about to eliminate an active player ${name}. This will label them as eliminated but preserve past scores. Continue?`;
+            let message = `Remove ${name}?`;
+            if (player.losses < maxLosses) {
+                message = `You're about to remove an active player ${name}. This action cannot be undone. Continue?`;
             }
             if (!confirm(message)) return;
-            player.eliminated = true;
-            propagateUpdates();
+            players = players.filter(p => p.name !== name);
+            if (currentRoundIndex >= 0 && !isRoundComplete(rounds[currentRoundIndex])) {
+                let round = rounds[currentRoundIndex];
+                let byeIndex = round.findIndex(item => item.type === 'bye' && resolve(item.source) === name);
+                let matchIndex = round.findIndex(item => item.type !== 'bye' && (resolve(item.p1) === name || resolve(item.p2) === name));
+                if (matchIndex > -1) {
+                    const match = round[matchIndex];
+                    const opponent = resolve(match.p1) === name ? resolve(match.p2) : resolve(match.p1);
+                    round.splice(matchIndex, 1);
+                    if (byeIndex > -1) {
+                        const byeItem = round[byeIndex];
+                        const byeName = resolve(byeItem.source);
+                        round.splice(byeIndex, 1);
+                        round.push({p1: {type: 'player', name: byeName}, p2: {type: 'player', name: opponent}, winner: null, id: matchIdCounter++, ignoreAuto: false});
+                        const byeP = players.find(p => p.name === byeName);
+                        if (byeP) byeP.byes -= 1;
+                    } else {
+                        round.push({type: 'bye', source: {type: 'player', name: opponent}, id: matchIdCounter++});
+                    }
+                } else if (byeIndex > -1) {
+                    round.splice(byeIndex, 1);
+                }
+            }
             renderAll();
             saveState();
-        }
-        function propagateAutoWins() {
-            rounds.forEach(round => {
-                round.forEach(item => {
-                    if (item.type === 'bye' || item.winner !== null || item.ignoreAuto) return;
-                    const p1n = resolve(item.p1, true);
-                    const p2n = resolve(item.p2, true);
-                    const p1Disp = getDisplayName(item.p1);
-                    const p2Disp = getDisplayName(item.p2);
-                    if (p1n && p2n === null && p2Disp.startsWith('Eliminated')) {
-                        item.winner = p1n;
-                    } else if (p2n && p1n === null && p1Disp.startsWith('Eliminated')) {
-                        item.winner = p2n;
-                    }
-                });
-            });
         }
         function renderRounds() {
             const container = document.getElementById('tournament');
@@ -860,13 +786,7 @@
                                 } else {
                                     item.winner = p1Name;
                                     item.ignoreAuto = p1Disp.startsWith('Eliminated');
-                                    const loserName = p2Name;
-                                    const p1P = players.find(p => p.name === p1Name);
-                                    const p2P = players.find(p => p.name === loserName);
-                                    if (p1P) p1P.lastOpponent = loserName;
-                                    if (p2P) p2P.lastOpponent = p1Name;
                                 }
-                                propagateUpdates();
                                 renderAll();
                                 saveState();
                             }
@@ -886,13 +806,7 @@
                                 } else {
                                     item.winner = p2Name;
                                     item.ignoreAuto = p2Disp.startsWith('Eliminated');
-                                    const loserName = p1Name;
-                                    const p1P = players.find(p => p.name === loserName);
-                                    const p2P = players.find(p => p.name === p2Name);
-                                    if (p1P) p1P.lastOpponent = p2Name;
-                                    if (p2P) p2P.lastOpponent = loserName;
                                 }
-                                propagateUpdates();
                                 renderAll();
                                 saveState();
                             }
@@ -908,7 +822,8 @@
             });
         }
         function renderAll() {
-            propagateUpdates();
+            applyMatchResults();
+            propagateAutoAdvances();
             renderStandings();
             renderRounds();
             checkForPodium();
@@ -921,7 +836,7 @@
             const podiumDiv = document.getElementById('podium');
             podiumDiv.innerHTML = '';
             podiumDiv.style.display = 'none';
-            if (!tiebreakerActive && format === 'double' && rounds.length >= 2) {
+            if (!tiebreakerActive && rounds.length >= 2) {
                 const prevRound = rounds[rounds.length - 2];
                 const losers = [];
                 prevRound.forEach(item => {
@@ -929,8 +844,7 @@
                         const p1 = resolve(item.p1, true);
                         const p2 = resolve(item.p2, true);
                         const loserName = item.winner === p1 ? p2 : p1;
-                        const loserP = players.find(p => p.name === loserName);
-                        if (loserName && loserP && !loserP.eliminated) losers.push(loserName);
+                        if (loserName) losers.push(loserName);
                     }
                 });
                 if (losers.length === 2) {
@@ -950,8 +864,8 @@
                 }
             }
             const finalRound = tiebreakerActive ? rounds[rounds.length - 2] : rounds[rounds.length - 1];
-            const finalMatch = finalRound.find(item => item.type !== 'bye' && item.winner);
-            if (finalMatch) {
+            const finalMatch = finalRound.find(item => item.type !== 'bye');
+            if (finalMatch && finalMatch.winner) {
                 const first = finalMatch.winner;
                 const p1 = resolve(finalMatch.p1, true);
                 const p2 = resolve(finalMatch.p2, true);
@@ -961,8 +875,8 @@
             }
             if (tiebreakerActive) {
                 const tieRound = rounds[rounds.length - 1];
-                const tieMatch = tieRound.find(item => item.type !== 'bye' && item.winner);
-                if (tieMatch) {
+                const tieMatch = tieRound.find(item => item.type !== 'bye');
+                if (tieMatch && tieMatch.winner) {
                     const third = tieMatch.winner;
                     const p1 = resolve(tieMatch.p1, true);
                     const p2 = resolve(tieMatch.p2, true);
@@ -991,7 +905,7 @@
             const data = JSON.parse(saved);
             playerNames = data.playerNames || [];
             format = data.format || 'double';
-            players = data.players.map(p => ({...p, lastOpponent: p.lastOpponent || null, eliminated: p.eliminated || false})) || [];
+            players = data.players || [];
             rounds = data.rounds || [];
             tiebreakerActive = data.tiebreakerActive || false;
             tournamentStarted = data.tournamentStarted || false;
