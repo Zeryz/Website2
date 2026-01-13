@@ -531,15 +531,19 @@
                         const p1Disp = getDisplayName(item.p1);
                         const p2Disp = getDisplayName(item.p2);
                         if (p1n === null && p2n !== null && p1Disp === 'Eliminated') {
-                            item.winner = p2n;
-                            item.ignoreAuto = true;
-                            freeAdvances.push({type: 'auto_win', player: p2n, item});
-                            changed = true;
+                            const index = round.indexOf(item);
+                            if (index !== -1) {
+                                round.splice(index, 1);
+                                round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
+                                changed = true;
+                            }
                         } else if (p2n === null && p1n !== null && p2Disp === 'Eliminated') {
-                            item.winner = p1n;
-                            item.ignoreAuto = true;
-                            freeAdvances.push({type: 'auto_win', player: p1n, item});
-                            changed = true;
+                            const index = round.indexOf(item);
+                            if (index !== -1) {
+                                round.splice(index, 1);
+                                round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
+                                changed = true;
+                            }
                         }
                     });
                 });
@@ -725,15 +729,16 @@
                         const p2n = resolve(item.p2, true);
                         const loserName = item.winner === p1n ? p2n : p1n;
                         const loser = players.find(p => p.name === loserName);
-                        const wasActive = loser && loser.losses < maxLosses;
-                        if (loser && wasActive) {
+                        if (loser) {
                             loser.losses += 1;
-                        }
-                        if (winnerP) {
-                            if (loser && wasActive) {
-                                winnerP.wins += 1;
+                            if (winnerP) {
                                 winnerP.lastOpponent = loserName;
                                 loser.lastOpponent = item.winner;
+                            }
+                        }
+                        if (winnerP) {
+                            if (loser) {
+                                winnerP.wins += 1;
                             } else {
                                 winnerP.byes += 1;
                             }
