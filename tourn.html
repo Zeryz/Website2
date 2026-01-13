@@ -558,6 +558,12 @@
             });
         }
         function generateNextRound() {
+            let active = getActivePlayers();
+            if (active.length <= 1) {
+                document.getElementById('nextRoundBtn').style.display = 'none';
+                return;
+            }
+            let ready = getReadyPlayers();
             let undecided = [];
             rounds.forEach(round => {
                 round.forEach(item => {
@@ -566,18 +572,17 @@
                     }
                 });
             });
-            if (undecided.length > 0) {
-                alert('Complete the current round before generating the next.');
-                return;
+            let pendingSources = [];
+            if (format === 'single') {
+                pendingSources = undecided.map(item => ({type: 'winner_of', itemId: item.id}));
+            } else {
+                pendingSources = undecided.flatMap(item => [
+                    {type: 'winner_of', itemId: item.id},
+                    {type: 'loser_of', itemId: item.id}
+                ]);
             }
-            let active = getActivePlayers();
-            if (active.length <= 1) {
-                document.getElementById('nextRoundBtn').style.display = 'none';
-                return;
-            }
-            let ready = getActivePlayers();
             let readySources = ready.map(p => ({type: 'player', name: p.name, losses: p.losses}));
-            let pairingActive = readySources;
+            let pairingActive = readySources.concat(pendingSources.map(s => ({...s, losses: getProjectedLosses(s)})));
             let pastMatches = new Set();
             rounds.forEach(round => {
                 round.forEach(item => {
@@ -591,17 +596,23 @@
                     }
                 });
             });
-            pairingActive.sort((a, b) => a.losses - b.losses || b.wins - a.wins);
+            pairingActive.sort((a, b) => a.losses - b.losses || Math.random() - 0.5);
             const newRound = [];
             let byeSource = null;
             if (pairingActive.length % 2 === 1) {
-                const minByes = Math.min(...ready.map(p => p.byes));
-                const candidates = ready.filter(p => p.byes === minByes).sort((a, b) => a.losses - b.losses || b.wins - a.wins);
-                const byeP = candidates[0]; // Prefer lowest losses, highest wins for bye
-                byeP.byes += 1;
-                byeSource = {type: 'player', name: byeP.name};
-                pairingActive = pairingActive.filter(s => s.name !== byeP.name);
-                newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
+                const minByes = Math.min(...active.map(p => p.byes));
+                const candidates = ready.filter(p => p.byes === minByes);
+                if (candidates.length > 0) {
+                    const byeP = candidates[Math.floor(Math.random() * candidates.length)];
+                    byeP.byes += 1;
+                    byeSource = readySources.find(s => s.name === byeP.name);
+                } else if (pendingSources.length > 0) {
+                    byeSource = pendingSources[Math.floor(Math.random() * pendingSources.length)];
+                }
+                if (byeSource) {
+                    pairingActive = pairingActive.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
+                    newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
+                }
             }
             let bestShuffle = null;
             let minRematches = Infinity;
@@ -610,11 +621,13 @@
                 let rematches = 0;
                 for (let i = 0; i < shuffled.length; i += 2) {
                     const s1 = shuffled[i];
-                    const n1 = s1.name;
+                    const n1 = resolve(s1);
                     const s2 = shuffled[i + 1];
-                    const n2 = s2.name;
-                    let pair = [n1, n2].sort().join('-');
-                    if (pastMatches.has(pair)) rematches++;
+                    const n2 = resolve(s2);
+                    if (n1 && n2) {
+                        let pair = [n1, n2].sort().join('-');
+                        if (pastMatches.has(pair)) rematches++;
+                    }
                 }
                 if (rematches < minRematches) {
                     minRematches = rematches;
@@ -631,6 +644,7 @@
                     ignoreAuto: false
                 });
             }
+            newRound.generatedWithPending = pendingSources.length > 0;
             rounds.push(newRound);
             currentRoundIndex = rounds.length - 1;
             renderAll();
@@ -757,6 +771,44 @@
             renderAll();
             saveState();
         }
+        function hasTBD(round) {
+            return round.some(item => item.type !== 'bye' && (isTBD(item.p1) || isTBD(item.p2)));
+        }
+        function hasWinners(round) {
+            return round.some(item => item.type !== 'bye' && item.winner !== null);
+        }
+        function getProjectedLosses(source) {
+            const name = resolve(source);
+            if (name) {
+                return players.find(p => p.name === name).losses;
+            }
+            if (source.type === 'winner_of') {
+                const item = findItemById(source.itemId);
+                if (item) {
+                    const p1n = resolve(item.p1);
+                    const p2n = resolve(item.p2);
+                    if (p1n && p2n) {
+                        const l1 = players.find(p => p.name === p1n).losses;
+                        const l2 = players.find(p => p.name === p2n).losses;
+                        return Math.min(l1, l2);
+                    }
+                }
+                return 0;
+            } else if (source.type === 'loser_of') {
+                const item = findItemById(source.itemId);
+                if (item) {
+                    const p1n = resolve(item.p1);
+                    const p2n = resolve(item.p2);
+                    if (p1n && p2n) {
+                        const l1 = players.find(p => p.name === p1n).losses;
+                        const l2 = players.find(p => p.name === p2n).losses;
+                        return Math.min(l1, l2) + 1;
+                    }
+                }
+                return 1;
+            }
+            return 0;
+        }
         function renderRounds() {
             const container = document.getElementById('tournament');
             container.innerHTML = '';
@@ -779,6 +831,7 @@
                     } else {
                         const p1Disp = getDisplayName(item.p1);
                         const p2Disp = getDisplayName(item.p2);
+                        if (p1Disp === 'TBD' && p2Disp === 'TBD') return;
                         const p1Name = resolve(item.p1, true);
                         const p2Name = resolve(item.p2, true);
                         const isP1Clickable = p1Disp !== 'TBD' && p1Name !== null;
@@ -838,6 +891,14 @@
         function renderAll() {
             applyMatchResults();
             propagateAutoAdvances();
+            const currentRound = rounds[currentRoundIndex];
+            if (currentRound && currentRound.generatedWithPending && !hasTBD(currentRound) && !hasWinners(currentRound)) {
+                currentRound.generatedWithPending = false; // Prevent loop
+                rounds.pop();
+                currentRoundIndex--;
+                generateNextRound();
+                return; // Exit to avoid double render
+            }
             renderStandings();
             renderRounds();
             const ready = getReadyPlayers();
