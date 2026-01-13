@@ -38,7 +38,7 @@
             text-decoration: underline;
         }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
-    
+   
         .setup {
             background: #222;
             padding: 20px;
@@ -363,9 +363,9 @@
                     if (byeName) {
                         const byeP = players.find(p => p.name === byeName);
                         if (byeP) byeP.byes -= 1;
+                        round.splice(byeIndex, 1);
+                        round.push({ p1: {type: 'player', name: byeName}, p2: {type: 'player', name: newPlayer.name}, winner: null, id: matchIdCounter++, ignoreAuto: false });
                     }
-                    round.splice(byeIndex, 1);
-                    round.push({ p1: {type: 'player', name: byeName}, p2: {type: 'player', name: newPlayer.name}, winner: null, id: matchIdCounter++, ignoreAuto: false });
                 } else {
                     const undecided = round.filter(item => item.type !== 'bye' && item.winner === null && resolve(item.p1) && resolve(item.p2));
                     if (undecided.length === 0) {
@@ -533,13 +533,13 @@
                     if (advancers.length === 1) {
                         newRound.push({type: 'bye', source: advancers[0].liveSource, id: matchIdCounter++});
                     } else {
-                        advancers.sort((a, b) => players.find(p => p.name === a.liveName).losses - players.find(p => p.name === b.liveName).losses);
+                        advancers.sort(() => Math.random() - 0.5); // Changed: Random shuffle instead of sorting by losses
                         let liveSources = advancers.map(t => t.liveSource);
                         let byeSource = null;
                         if (advancers.length % 2 === 1) {
                             const minByes = Math.min(...advancers.map(t => players.find(p => p.name === t.liveName).byes));
                             const candidates = advancers.filter(t => players.find(p => p.name === t.liveName).byes === minByes);
-                            const byeT = candidates[candidates.length - 1]; // Prefer last for stability
+                            const byeT = candidates[Math.floor(Math.random() * candidates.length)]; // Changed: Random bye candidate instead of last
                             byeSource = byeT.liveSource;
                             liveSources = liveSources.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
                             newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
@@ -597,7 +597,32 @@
                     }
                 });
             });
-            pairingActive.sort((a, b) => a.losses - b.losses || Math.random() - 0.5);
+            // Removed: Sorting by losses; now fully random except for rematch minimization
+            let bestShuffle = null;
+            let minRematches = Infinity;
+            for (let attempt = 0; attempt < 1000; attempt++) {
+                const shuffled = [...pairingActive].sort(() => Math.random() - 0.5);
+                let rematches = 0;
+                for (let i = 0; i < shuffled.length; i += 2) {
+                    const s1 = shuffled[i];
+                    const n1 = resolve(s1);
+                    const s2 = shuffled[i + 1];
+                    const n2 = resolve(s2);
+                    if (n1 && n2) {
+                        let pair = [n1, n2].sort().join('-');
+                        if (pastMatches.has(pair)) rematches++;
+                    } else if (s1.type && s2.type && s1.itemId === s2.itemId &&
+                               ((s1.type === 'winner_of' && s2.type === 'loser_of') ||
+                                (s1.type === 'loser_of' && s2.type === 'winner_of'))) {
+                        rematches++; // Added: Count guaranteed rematches from same pending match
+                    }
+                }
+                if (rematches < minRematches) {
+                    minRematches = rematches;
+                    bestShuffle = shuffled;
+                    if (minRematches === 0) break;
+                }
+            }
             const newRound = [];
             let byeSource = null;
             if (pairingActive.length % 2 === 1) {
@@ -613,27 +638,6 @@
                 if (byeSource) {
                     pairingActive = pairingActive.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
                     newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
-                }
-            }
-            let bestShuffle = null;
-            let minRematches = Infinity;
-            for (let attempt = 0; attempt < 1000; attempt++) {
-                const shuffled = [...pairingActive].sort(() => Math.random() - 0.5);
-                let rematches = 0;
-                for (let i = 0; i < shuffled.length; i += 2) {
-                    const s1 = shuffled[i];
-                    const n1 = resolve(s1);
-                    const s2 = shuffled[i + 1];
-                    const n2 = resolve(s2);
-                    if (n1 && n2) {
-                        let pair = [n1, n2].sort().join('-');
-                        if (pastMatches.has(pair)) rematches++;
-                    }
-                }
-                if (rematches < minRematches) {
-                    minRematches = rematches;
-                    bestShuffle = shuffled;
-                    if (minRematches === 0) break;
                 }
             }
             for (let i = 0; i < bestShuffle.length; i += 2) {
@@ -712,7 +716,6 @@
                 message = `You're about to remove an active player ${name}. This action cannot be undone. Continue?`;
             }
             if (!confirm(message)) return;
-
             // Find everything BEFORE mutating players
             let round = null;
             let byeIndex = -1;
@@ -731,10 +734,8 @@
                     byeName = resolve(round[byeIndex].source);
                 }
             }
-
             // Now safe to remove the player
             players = players.filter(p => p.name !== name);
-
             // Adjust the round if necessary
             if (round) {
                 if (matchIndex > -1) {
@@ -768,7 +769,6 @@
                     round.splice(byeIndex, 1);
                 }
             }
-
             renderAll();
             saveState();
         }
@@ -893,7 +893,7 @@
             applyMatchResults();
             propagateAutoAdvances();
             const currentRound = rounds[currentRoundIndex];
-            if (currentRound && currentRound.generatedWithPending && !hasTBD(currentRound) && !hasWinners(currentRound)) {
+            if (currentRound && currentRound.generatedWithPending && !hasTBD(currentRound) && !hasWinners(currentRound) && currentRound.some(item => item.type !== 'bye')) { // Added: Condition to avoid popping rounds with only byes
                 currentRound.generatedWithPending = false; // Prevent loop
                 rounds.pop();
                 currentRoundIndex--;
