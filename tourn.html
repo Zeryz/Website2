@@ -319,6 +319,7 @@
                 <button onclick="startTournament()">Start Tournament</button>
                 <button onclick="loadState()" class="secondary">Load Saved</button>
                 <button id="addLateBtn" onclick="addLatePlayer()" class="secondary" style="display: none;">Add Late Player</button>
+                <button id="regenerateBtn" onclick="regenerateCurrentRound()" class="secondary" style="display: none;">Regenerate Current Round</button>
             </div>
         </div>
         <div class="main-area">
@@ -434,6 +435,7 @@
             document.getElementById('preStartInput').style.display = 'none';
             document.getElementById('playersList').style.display = 'none';
             document.getElementById('addLateBtn').style.display = 'inline-block';
+            document.getElementById('regenerateBtn').style.display = 'inline-block';
             document.getElementById('standings').style.display = 'block';
             generateNextRound();
         }
@@ -808,6 +810,7 @@
                     } else {
                         const p1Disp = getDisplayName(item.p1);
                         const p2Disp = getDisplayName(item.p2);
+                        if (p1Disp === 'TBD' && p2Disp === 'TBD') return; // Skip fully TBD matches
                         const p1Name = resolve(item.p1, true);
                         const p2Name = resolve(item.p2, true);
                         const isP1Clickable = p1Disp !== 'TBD' && p1Name !== null;
@@ -872,6 +875,13 @@
             checkForPodium();
             const ready = getReadyPlayers();
             document.getElementById('nextRoundBtn').style.display = ready.length >= 2 ? 'block' : 'none';
+        }
+        function regenerateCurrentRound() {
+            if (currentRoundIndex < 0) return alert('No current round to regenerate.');
+            if (!confirm('Regenerate the current round? This will discard any results in this round.')) return;
+            rounds.pop();
+            currentRoundIndex--;
+            generateNextRound();
         }
         function checkForPodium() {
             const active = getActivePlayers();
@@ -960,6 +970,7 @@
                 document.getElementById('preStartInput').style.display = 'none';
                 document.getElementById('playersList').style.display = 'none';
                 document.getElementById('addLateBtn').style.display = 'inline-block';
+                document.getElementById('regenerateBtn').style.display = 'inline-block';
                 document.getElementById('standings').style.display = 'block';
             } else {
                 renderPlayersList();
