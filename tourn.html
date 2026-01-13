@@ -525,8 +525,8 @@
                         }
                     });
                 });
-                rounds.forEach((round, rIndex) => {
-                    if (rIndex < rounds.length - 1) return; // Only process the latest round for consolidation
+                for (let rIndex = 0; rIndex < rounds.length; rIndex++) {
+                    const round = rounds[rIndex];
                     for (let itemIndex = round.length - 1; itemIndex >= 0; itemIndex--) {
                         const item = round[itemIndex];
                         if (item.type === 'bye') {
@@ -535,7 +535,7 @@
                             if (sourceName === null && sourceNameIgnore !== null) {
                                 toRemove.push({round, item});
                             } else if (sourceName) {
-                                freeAdvances.push({type: 'bye', player: sourceName, item});
+                                freeAdvances.push({type: 'bye', player: sourceName, item, round});
                             }
                             continue;
                         }
@@ -559,7 +559,7 @@
                             changed = true;
                         }
                     }
-                });
+                }
                 toRemove.forEach(({round, item}) => {
                     const index = round.indexOf(item);
                     if (index > -1) {
@@ -590,11 +590,11 @@
                     for (let i = 0; i < bestShuffle.length - (bestShuffle.length % 2); i += 2) {
                         const fa1 = bestShuffle[i];
                         const fa2 = bestShuffle[i + 1];
-                        const round = rounds[rounds.length - 1];
-                        const index1 = round.indexOf(fa1.item);
-                        if (index1 > -1) round.splice(index1, 1);
-                        const index2 = round.indexOf(fa2.item);
-                        if (index2 > -1) round.splice(index2, 1);
+                        const round = fa1.round || fa2.round || rounds[rounds.length - 1]; // Use the round of the first, or last if not
+                        const index1 = fa1.round.indexOf(fa1.item);
+                        if (index1 > -1) fa1.round.splice(index1, 1);
+                        const index2 = fa2.round.indexOf(fa2.item);
+                        if (index2 > -1) fa2.round.splice(index2, 1);
                         round.push({
                             p1: {type: 'player', name: fa1.player},
                             p2: {type: 'player', name: fa2.player},
@@ -883,7 +883,7 @@
                                     item.winner = p1Name;
                                     item.ignoreAuto = isP1Elim;
                                 }
-                                propagateAutoWins(); // Added to trigger propagation immediately after winner change
+                                propagateAutoWins(); // Trigger propagation immediately after winner change
                                 renderAll();
                                 saveState();
                             }
@@ -904,7 +904,7 @@
                                     item.winner = p2Name;
                                     item.ignoreAuto = isP2Elim;
                                 }
-                                propagateAutoWins(); // Added to trigger propagation immediately after winner change
+                                propagateAutoWins(); // Trigger propagation immediately after winner change
                                 renderAll();
                                 saveState();
                             }
