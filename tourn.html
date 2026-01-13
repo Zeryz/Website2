@@ -509,10 +509,19 @@
         }
         function propagateAutoAdvances() {
             rounds.forEach((round, rIdx) => {
-                let trivial = [];
+                let advancers = [];
                 let newRound = [];
                 round.forEach(item => {
-                    if (item.type === 'bye' || item.winner !== null || item.ignoreAuto) {
+                    if (item.type === 'bye') {
+                        const sn = resolve(item.source);
+                        const sDisp = getDisplayName(item.source);
+                        if (sn !== null && !sDisp.startsWith('Eliminated')) {
+                            advancers.push({liveSource: item.source, liveName: sn});
+                        }
+                        // skip adding to newRound
+                        return;
+                    }
+                    if (item.winner !== null || item.ignoreAuto) {
                         newRound.push(item);
                         return;
                     }
@@ -521,25 +530,25 @@
                     const p1Disp = getDisplayName(item.p1);
                     const p2Disp = getDisplayName(item.p2);
                     if (p1n === null && p1Disp.startsWith('Eliminated') && p2n !== null) {
-                        trivial.push({liveSource: item.p2, liveName: p2n});
+                        advancers.push({liveSource: item.p2, liveName: p2n});
                     } else if (p2n === null && p2Disp.startsWith('Eliminated') && p1n !== null) {
-                        trivial.push({liveSource: item.p1, liveName: p1n});
+                        advancers.push({liveSource: item.p1, liveName: p1n});
                     } else if (p1n === null && p2n === null) {
                         // skip
                     } else {
                         newRound.push(item);
                     }
                 });
-                if (trivial.length > 0) {
-                    if (trivial.length === 1) {
-                        newRound.push({type: 'bye', source: trivial[0].liveSource, id: matchIdCounter++});
+                if (advancers.length > 0) {
+                    if (advancers.length === 1) {
+                        newRound.push({type: 'bye', source: advancers[0].liveSource, id: matchIdCounter++});
                     } else {
-                        trivial.sort(() => Math.random() - 0.5);
-                        let liveSources = trivial.map(t => t.liveSource);
+                        advancers.sort(() => Math.random() - 0.5);
+                        let liveSources = advancers.map(t => t.liveSource);
                         let byeSource = null;
-                        if (trivial.length % 2 === 1) {
-                            const minByes = Math.min(...trivial.map(t => players.find(p => p.name === t.liveName).byes));
-                            const candidates = trivial.filter(t => players.find(p => p.name === t.liveName).byes === minByes);
+                        if (advancers.length % 2 === 1) {
+                            const minByes = Math.min(...advancers.map(t => players.find(p => p.name === t.liveName).byes));
+                            const candidates = advancers.filter(t => players.find(p => p.name === t.liveName).byes === minByes);
                             const byeT = candidates[Math.floor(Math.random() * candidates.length)];
                             byeSource = byeT.liveSource;
                             liveSources = liveSources.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
@@ -706,74 +715,74 @@
                 table.appendChild(row);
             });
         }
-function removeTournamentPlayer(name) {
-    const player = players.find(p => p.name === name);
-    if (!player) return;
-    let message = `Remove ${name}?`;
-    if (player.losses < maxLosses) {
-        message = `You're about to remove an active player ${name}. This action cannot be undone. Continue?`;
-    }
-    if (!confirm(message)) return;
-
-    // Find everything BEFORE mutating players
-    let round = null;
-    let byeIndex = -1;
-    let matchIndex = -1;
-    let opponentName = null;
-    let byeName = null;
-    if (currentRoundIndex >= 0 && !isRoundComplete(rounds[currentRoundIndex])) {
-        round = rounds[currentRoundIndex];
-        byeIndex = round.findIndex(item => item.type === 'bye');
-        matchIndex = round.findIndex(item => item.type !== 'bye' && (resolve(item.p1) === name || resolve(item.p2) === name));
-        if (matchIndex > -1) {
-            const match = round[matchIndex];
-            opponentName = resolve(match.p1) === name ? resolve(match.p2) : resolve(match.p1);
-        }
-        if (byeIndex > -1) {
-            byeName = resolve(round[byeIndex].source);
-        }
-    }
-
-    // Now safe to remove the player
-    players = players.filter(p => p.name !== name);
-
-    // Adjust the round if necessary
-    if (round) {
-        if (matchIndex > -1) {
-            round.splice(matchIndex, 1);
-            // Adjust byeIndex if it was after the match
-            if (byeIndex > -1 && byeIndex > matchIndex) {
-                byeIndex--;
+        function removeTournamentPlayer(name) {
+            const player = players.find(p => p.name === name);
+            if (!player) return;
+            let message = `Remove ${name}?`;
+            if (player.losses < maxLosses) {
+                message = `You're about to remove an active player ${name}. This action cannot be undone. Continue?`;
             }
-            if (byeIndex > -1) {
-                // Merge: replace bye with match (bye player vs freed opponent)
-                round.splice(byeIndex, 1);
-                if (byeName && opponentName) {
-                    round.push({
-                        p1: {type: 'player', name: byeName},
-                        p2: {type: 'player', name: opponentName},
-                        winner: null,
-                        id: matchIdCounter++,
-                        ignoreAuto: false
-                    });
+            if (!confirm(message)) return;
+
+            // Find everything BEFORE mutating players
+            let round = null;
+            let byeIndex = -1;
+            let matchIndex = -1;
+            let opponentName = null;
+            let byeName = null;
+            if (currentRoundIndex >= 0 && !isRoundComplete(rounds[currentRoundIndex])) {
+                round = rounds[currentRoundIndex];
+                byeIndex = round.findIndex(item => item.type === 'bye');
+                matchIndex = round.findIndex(item => item.type !== 'bye' && (resolve(item.p1) === name || resolve(item.p2) === name));
+                if (matchIndex > -1) {
+                    const match = round[matchIndex];
+                    opponentName = resolve(match.p1) === name ? resolve(match.p2) : resolve(match.p1);
                 }
-            } else if (opponentName) {
-                // No existing bye: give bye to freed opponent
-                round.push({
-                    type: 'bye',
-                    source: {type: 'player', name: opponentName},
-                    id: matchIdCounter++
-                });
+                if (byeIndex > -1) {
+                    byeName = resolve(round[byeIndex].source);
+                }
             }
-        } else if (byeIndex > -1) {
-            // Player was on bye: just remove the bye
-            round.splice(byeIndex, 1);
-        }
-    }
 
-    renderAll();
-    saveState();
-}
+            // Now safe to remove the player
+            players = players.filter(p => p.name !== name);
+
+            // Adjust the round if necessary
+            if (round) {
+                if (matchIndex > -1) {
+                    round.splice(matchIndex, 1);
+                    // Adjust byeIndex if it was after the match
+                    if (byeIndex > -1 && byeIndex > matchIndex) {
+                        byeIndex--;
+                    }
+                    if (byeIndex > -1) {
+                        // Merge: replace bye with match (bye player vs freed opponent)
+                        round.splice(byeIndex, 1);
+                        if (byeName && opponentName) {
+                            round.push({
+                                p1: {type: 'player', name: byeName},
+                                p2: {type: 'player', name: opponentName},
+                                winner: null,
+                                id: matchIdCounter++,
+                                ignoreAuto: false
+                            });
+                        }
+                    } else if (opponentName) {
+                        // No existing bye: give bye to freed opponent
+                        round.push({
+                            type: 'bye',
+                            source: {type: 'player', name: opponentName},
+                            id: matchIdCounter++
+                        });
+                    }
+                } else if (byeIndex > -1) {
+                    // Player was on bye: just remove the bye
+                    round.splice(byeIndex, 1);
+                }
+            }
+
+            renderAll();
+            saveState();
+        }
         function renderRounds() {
             const container = document.getElementById('tournament');
             container.innerHTML = '';
