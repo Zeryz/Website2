@@ -533,13 +533,13 @@
                     if (advancers.length === 1) {
                         newRound.push({type: 'bye', source: advancers[0].liveSource, id: matchIdCounter++});
                     } else {
-                        advancers.sort(() => Math.random() - 0.5); // Changed: Random shuffle instead of sorting by losses
+                        advancers.sort(() => Math.random() - 0.5); // Random shuffle
                         let liveSources = advancers.map(t => t.liveSource);
                         let byeSource = null;
                         if (advancers.length % 2 === 1) {
-                            const minByes = Math.min(...advancers.map(t => players.find(p => p.name === t.liveName).byes));
-                            const candidates = advancers.filter(t => players.find(p => p.name === t.liveName).byes === minByes);
-                            const byeT = candidates[Math.floor(Math.random() * candidates.length)]; // Changed: Random bye candidate instead of last
+                            const minByes = Math.min(...advancers.map(t => players.find(p => p.name === t.liveName)?.byes ?? 0));
+                            const candidates = advancers.filter(t => (players.find(p => p.name === t.liveName)?.byes ?? 0) === minByes);
+                            const byeT = candidates[Math.floor(Math.random() * candidates.length)];
                             byeSource = byeT.liveSource;
                             liveSources = liveSources.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
                             newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
@@ -597,7 +597,6 @@
                     }
                 });
             });
-            // Removed: Sorting by losses; now fully random except for rematch minimization
             let bestShuffle = null;
             let minRematches = Infinity;
             for (let attempt = 0; attempt < 1000; attempt++) {
@@ -614,7 +613,7 @@
                     } else if (s1.type && s2.type && s1.itemId === s2.itemId &&
                                ((s1.type === 'winner_of' && s2.type === 'loser_of') ||
                                 (s1.type === 'loser_of' && s2.type === 'winner_of'))) {
-                        rematches++; // Added: Count guaranteed rematches from same pending match
+                        rematches++;
                     }
                 }
                 if (rematches < minRematches) {
@@ -626,7 +625,7 @@
             const newRound = [];
             let byeSource = null;
             if (pairingActive.length % 2 === 1) {
-                const minByes = Math.min(...active.map(p => p.byes));
+                const minByes = Math.min(...active.map(p => p.byes ?? 0)); // Safeguard null
                 const candidates = ready.filter(p => p.byes === minByes);
                 if (candidates.length > 0) {
                     const byeP = candidates[Math.floor(Math.random() * candidates.length)];
@@ -693,7 +692,7 @@
             const div = document.getElementById('standings');
             div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th><th>Wins</th><th>Byes</th><th></th></tr></table>';
             const table = div.querySelector('table');
-            let standingsPlayers = [...players].sort((a, b) => a.losses - b.losses || b.wins - a.wins || Math.random() - 0.5);
+            let standingsPlayers = [...players].sort((a, b) => a.losses - b.losses || b.wins - a.wins || a.name.localeCompare(b.name)); // Fixed: Stable tiebreaker
             standingsPlayers = standingsPlayers.filter(p => p.losses < maxLosses);
             standingsPlayers.forEach(p => {
                 const row = document.createElement('tr');
@@ -781,7 +780,7 @@
         function getProjectedLosses(source) {
             const name = resolve(source);
             if (name) {
-                return players.find(p => p.name === name).losses;
+                return players.find(p => p.name === name)?.losses ?? 0;
             }
             if (source.type === 'winner_of') {
                 const item = findItemById(source.itemId);
@@ -789,8 +788,8 @@
                     const p1n = resolve(item.p1);
                     const p2n = resolve(item.p2);
                     if (p1n && p2n) {
-                        const l1 = players.find(p => p.name === p1n).losses;
-                        const l2 = players.find(p => p.name === p2n).losses;
+                        const l1 = players.find(p => p.name === p1n)?.losses ?? 0;
+                        const l2 = players.find(p => p.name === p2n)?.losses ?? 0;
                         return Math.min(l1, l2);
                     }
                 }
@@ -801,8 +800,8 @@
                     const p1n = resolve(item.p1);
                     const p2n = resolve(item.p2);
                     if (p1n && p2n) {
-                        const l1 = players.find(p => p.name === p1n).losses;
-                        const l2 = players.find(p => p.name === p2n).losses;
+                        const l1 = players.find(p => p.name === p1n)?.losses ?? 0;
+                        const l2 = players.find(p => p.name === p2n)?.losses ?? 0;
                         return Math.min(l1, l2) + 1;
                     }
                 }
@@ -893,7 +892,7 @@
             applyMatchResults();
             propagateAutoAdvances();
             const currentRound = rounds[currentRoundIndex];
-            if (currentRound && currentRound.generatedWithPending && !hasTBD(currentRound) && !hasWinners(currentRound) && currentRound.some(item => item.type !== 'bye')) { // Added: Condition to avoid popping rounds with only byes
+            if (currentRound && currentRound.generatedWithPending && !hasTBD(currentRound) && !hasWinners(currentRound) && currentRound.some(item => item.type !== 'bye' && item.winner === null)) { // Fixed: Pop only if undecided matches exist (prevents loop/miscount)
                 currentRound.generatedWithPending = false; // Prevent loop
                 rounds.pop();
                 currentRoundIndex--;
