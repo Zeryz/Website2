@@ -512,6 +512,19 @@
                 changed = false;
                 const toRemove = [];
                 const freeAdvances = [];
+                let pastMatches = new Set();
+                rounds.forEach(round => {
+                    round.forEach(item => {
+                        if (item.type !== 'bye' && item.winner) {
+                            let p1n = resolve(item.p1, true);
+                            let p2n = resolve(item.p2, true);
+                            if (p1n && p2n) {
+                                let pair = [p1n, p2n].sort().join('-');
+                                pastMatches.add(pair);
+                            }
+                        }
+                    });
+                });
                 rounds.forEach((round, rIndex) => {
                     if (rIndex < rounds.length - 1) return; // Only process the latest round for consolidation
                     round.forEach(item => {
@@ -555,17 +568,33 @@
                 });
                 if (toRemove.length > 0) changed = true;
                 if (freeAdvances.length >= 2) {
-                    shuffle(freeAdvances);
-                    for (let i = 0; i < freeAdvances.length - (freeAdvances.length % 2); i += 2) {
-                        const fa1 = freeAdvances[i];
-                        const fa2 = freeAdvances[i + 1];
+                    let bestShuffle = null;
+                    let minRematches = Infinity;
+                    for (let attempt = 0; attempt < 100; attempt++) {
+                        const shuffled = shuffle([...freeAdvances]);
+                        let rematches = 0;
+                        for (let i = 0; i < shuffled.length - (shuffled.length % 2); i += 2) {
+                            const n1 = shuffled[i].player;
+                            const n2 = shuffled[i + 1].player;
+                            let pair = [n1, n2].sort().join('-');
+                            if (pastMatches.has(pair)) rematches += 1;
+                            const p1 = players.find(p => p.name === n1);
+                            if (p1 && p1.lastOpponent === n2) rematches += 2;
+                        }
+                        if (rematches < minRematches) {
+                            minRematches = rematches;
+                            bestShuffle = shuffled;
+                            if (minRematches === 0) break;
+                        }
+                    }
+                    for (let i = 0; i < bestShuffle.length - (bestShuffle.length % 2); i += 2) {
+                        const fa1 = bestShuffle[i];
+                        const fa2 = bestShuffle[i + 1];
                         const round = rounds[rounds.length - 1];
                         const index1 = round.indexOf(fa1.item);
                         if (index1 > -1) round.splice(index1, 1);
                         const index2 = round.indexOf(fa2.item);
                         if (index2 > -1) round.splice(index2, 1);
-                        if (fa1.type === 'auto_win') fa1.item.winner = null;
-                        if (fa2.type === 'auto_win') fa2.item.winner = null;
                         round.push({
                             p1: {type: 'player', name: fa1.player},
                             p2: {type: 'player', name: fa2.player},
