@@ -537,7 +537,7 @@
                             } else if (sourceName) {
                                 freeAdvances.push({type: 'bye', player: sourceName, item});
                             }
-                            return;
+                            continue;
                         }
                         if (item.winner !== null || item.ignoreAuto) continue;
                         const p1n = resolve(item.p1);
@@ -546,15 +546,15 @@
                         const p2Disp = getDisplayName(item.p2);
                         const p1NameIgnore = resolve(item.p1, true);
                         const p2NameIgnore = resolve(item.p2, true);
-                        if (p1n === null && p2n !== null && p1Disp !== 'TBD') {
+                        if (p1n === null && p2n !== null && p1Disp === 'Eliminated') {
                             round.splice(itemIndex, 1);
                             round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
                             changed = true;
-                        } else if (p2n === null && p1n !== null && p2Disp !== 'TBD') {
+                        } else if (p2n === null && p1n !== null && p2Disp === 'Eliminated') {
                             round.splice(itemIndex, 1);
                             round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
                             changed = true;
-                        } else if (p1n === null && p2n === null && p1Disp !== 'TBD' && p2Disp !== 'TBD') {
+                        } else if (p1n === null && p2n === null && p1Disp === 'Eliminated' && p2Disp === 'Eliminated') {
                             round.splice(itemIndex, 1);
                             changed = true;
                         }
@@ -570,7 +570,7 @@
                 if (freeAdvances.length >= 2) {
                     let bestShuffle = null;
                     let minRematches = Infinity;
-                    for (let attempt = 0; attempt < 100; attempt++) {
+                    for (let attempt = 0; attempt < 200; attempt++) {
                         const shuffled = shuffle([...freeAdvances]);
                         let rematches = 0;
                         for (let i = 0; i < shuffled.length - (shuffled.length % 2); i += 2) {
@@ -883,6 +883,7 @@
                                     item.winner = p1Name;
                                     item.ignoreAuto = isP1Elim;
                                 }
+                                propagateAutoWins(); // Added to trigger propagation immediately after winner change
                                 renderAll();
                                 saveState();
                             }
@@ -903,6 +904,7 @@
                                     item.winner = p2Name;
                                     item.ignoreAuto = isP2Elim;
                                 }
+                                propagateAutoWins(); // Added to trigger propagation immediately after winner change
                                 renderAll();
                                 saveState();
                             }
