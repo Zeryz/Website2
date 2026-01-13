@@ -371,7 +371,8 @@
                     if (undecided.length === 0) {
                         alert('Cannot add to current round, all matches decided. Player will join next round.');
                     } else {
-                        const randMatch = undecided[Math.floor(Math.random() * undecided.length)];
+                        // Choose the last undecided match to preserve the first ones
+                        const randMatch = undecided[undecided.length - 1];
                         const matchIndex = round.indexOf(randMatch);
                         const p1Name = resolve(randMatch.p1);
                         const p2Name = resolve(randMatch.p2);
