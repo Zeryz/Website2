@@ -525,40 +525,39 @@
                         }
                     });
                 });
-                rounds.forEach((round, rIndex) => {
-                    for (let itemIndex = round.length - 1; itemIndex >= 0; itemIndex--) {
-                        const item = round[itemIndex];
-                        if (item.type === 'bye') {
-                            const sourceName = resolve(item.source);
-                            const sourceNameIgnore = resolve(item.source, true);
-                            if (sourceName === null && sourceNameIgnore !== null) {
-                                toRemove.push({round, item});
-                            } else if (sourceName) {
-                                freeAdvances.push({type: 'bye', player: sourceName, item, round});
-                            }
-                            continue;
+                const round = rounds[rounds.length - 1];
+                for (let itemIndex = round.length - 1; itemIndex >= 0; itemIndex--) {
+                    const item = round[itemIndex];
+                    if (item.type === 'bye') {
+                        const sourceName = resolve(item.source);
+                        const sourceNameIgnore = resolve(item.source, true);
+                        if (sourceName === null && sourceNameIgnore !== null) {
+                            toRemove.push({round, item});
+                        } else if (sourceName) {
+                            freeAdvances.push({type: 'bye', player: sourceName, item});
                         }
-                        if (item.winner !== null || item.ignoreAuto) continue;
-                        const p1n = resolve(item.p1);
-                        const p2n = resolve(item.p2);
-                        const p1Disp = getDisplayName(item.p1);
-                        const p2Disp = getDisplayName(item.p2);
-                        const p1NameIgnore = resolve(item.p1, true);
-                        const p2NameIgnore = resolve(item.p2, true);
-                        if (p1n === null && p2n !== null && p1Disp === 'Eliminated') {
-                            round.splice(itemIndex, 1);
-                            round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
-                            changed = true;
-                        } else if (p2n === null && p1n !== null && p2Disp === 'Eliminated') {
-                            round.splice(itemIndex, 1);
-                            round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
-                            changed = true;
-                        } else if (p1n === null && p2n === null && p1Disp === 'Eliminated' && p2Disp === 'Eliminated') {
-                            round.splice(itemIndex, 1);
-                            changed = true;
-                        }
+                        continue;
                     }
-                });
+                    if (item.winner !== null || item.ignoreAuto) continue;
+                    const p1n = resolve(item.p1);
+                    const p2n = resolve(item.p2);
+                    const p1Disp = getDisplayName(item.p1);
+                    const p2Disp = getDisplayName(item.p2);
+                    const p1NameIgnore = resolve(item.p1, true);
+                    const p2NameIgnore = resolve(item.p2, true);
+                    if (p1n === null && p2n !== null && p1Disp === 'Eliminated') {
+                        round.splice(itemIndex, 1);
+                        round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
+                        changed = true;
+                    } else if (p2n === null && p1n !== null && p2Disp === 'Eliminated') {
+                        round.splice(itemIndex, 1);
+                        round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
+                        changed = true;
+                    } else if (p1n === null && p2n === null && p1Disp === 'Eliminated' && p2Disp === 'Eliminated') {
+                        round.splice(itemIndex, 1);
+                        changed = true;
+                    }
+                }
                 toRemove.forEach(({round, item}) => {
                     const index = round.indexOf(item);
                     if (index > -1) {
@@ -569,7 +568,7 @@
                 if (freeAdvances.length >= 2) {
                     let bestShuffle = null;
                     let minRematches = Infinity;
-                    for (let attempt = 0; attempt < 200; attempt++) {
+                    for (let attempt = 0; attempt < 100; attempt++) {
                         const shuffled = shuffle([...freeAdvances]);
                         let rematches = 0;
                         for (let i = 0; i < shuffled.length - (shuffled.length % 2); i += 2) {
@@ -589,12 +588,12 @@
                     for (let i = 0; i < bestShuffle.length - (bestShuffle.length % 2); i += 2) {
                         const fa1 = bestShuffle[i];
                         const fa2 = bestShuffle[i + 1];
-                        const targetRound = rounds[rounds.length - 1];
-                        const index1 = fa1.round.indexOf(fa1.item);
-                        if (index1 > -1) fa1.round.splice(index1, 1);
-                        const index2 = fa2.round.indexOf(fa2.item);
-                        if (index2 > -1) fa2.round.splice(index2, 1);
-                        targetRound.push({
+                        const round = rounds[rounds.length - 1];
+                        const index1 = round.indexOf(fa1.item);
+                        if (index1 > -1) round.splice(index1, 1);
+                        const index2 = round.indexOf(fa2.item);
+                        if (index2 > -1) round.splice(index2, 1);
+                        round.push({
                             p1: {type: 'player', name: fa1.player},
                             p2: {type: 'player', name: fa2.player},
                             winner: null,
@@ -829,6 +828,7 @@
                     round.splice(byeIndex, 1);
                 }
             }
+            propagateAutoWins();
             renderAll();
             saveState();
         }
