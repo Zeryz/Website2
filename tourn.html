@@ -543,58 +543,53 @@
                     if (p1) busy.add(p1);
                     if (p2) busy.add(p2);
                 });
-                rounds.forEach(round => {
-                    for (let itemIndex = round.length - 1; itemIndex >= 0; itemIndex--) {
-                        const item = round[itemIndex];
-                        if (item.type === 'bye') {
-                            const sourceName = resolve(item.source);
-                            const sourceNameIgnore = resolve(item.source, true);
-                            if (sourceName === null && sourceNameIgnore !== null) {
-                                toRemove.push({round, item});
-                            } else if (sourceName) {
-                                freeAdvances.push({type: 'bye', player: sourceName, item, round});
+                // Combined loop for undecided and completed matches, run twice for cascades
+                for (let pass = 0; pass < 2; pass++) {
+                    rounds.forEach(round => {
+                        for (let itemIndex = round.length - 1; itemIndex >= 0; itemIndex--) {
+                            const item = round[itemIndex];
+                            if (item.type === 'bye') {
+                                const sourceName = resolve(item.source);
+                                const sourceNameIgnore = resolve(item.source, true);
+                                if (sourceName === null && sourceNameIgnore !== null) {
+                                    toRemove.push({round, item});
+                                } else if (sourceName) {
+                                    freeAdvances.push({type: 'bye', player: sourceName, item, round});
+                                }
+                                continue;
                             }
-                            continue;
+                            const p1n = resolve(item.p1);
+                            const p2n = resolve(item.p2);
+                            if (item.winner === null && !item.ignoreAuto) {
+                                if (p1n === null && !isTBD(item.p1) && p2n !== null) {
+                                    round.splice(itemIndex, 1);
+                                    round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
+                                    changed = true;
+                                } else if (p2n === null && !isTBD(item.p2) && p1n !== null) {
+                                    round.splice(itemIndex, 1);
+                                    round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
+                                    changed = true;
+                                } else if (p1n === null && p2n === null && !isTBD(item.p1) && !isTBD(item.p2)) {
+                                    round.splice(itemIndex, 1);
+                                    changed = true;
+                                }
+                            } else if (item.winner !== null) {
+                                if (p1n === null && !isTBD(item.p1) && p2n !== null && item.winner === p2n) {
+                                    round.splice(itemIndex, 1);
+                                    round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
+                                    changed = true;
+                                } else if (p2n === null && !isTBD(item.p2) && p1n !== null && item.winner === p1n) {
+                                    round.splice(itemIndex, 1);
+                                    round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
+                                    changed = true;
+                                } else if (p1n === null && p2n === null && !isTBD(item.p1) && !isTBD(item.p2)) {
+                                    round.splice(itemIndex, 1);
+                                    changed = true;
+                                }
+                            }
                         }
-                        if (item.winner !== null || item.ignoreAuto) continue;
-                        const p1n = resolve(item.p1);
-                        const p2n = resolve(item.p2);
-                        if (p1n === null && !isTBD(item.p1) && p2n !== null) {
-                            round.splice(itemIndex, 1);
-                            round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
-                            changed = true;
-                        } else if (p2n === null && !isTBD(item.p2) && p1n !== null) {
-                            round.splice(itemIndex, 1);
-                            round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
-                            changed = true;
-                        } else if (p1n === null && p2n === null && !isTBD(item.p1) && !isTBD(item.p2)) {
-                            round.splice(itemIndex, 1);
-                            changed = true;
-                        }
-                    }
-                });
-                // Additional loop for completed matches
-                rounds.forEach(round => {
-                    for (let itemIndex = round.length - 1; itemIndex >= 0; itemIndex--) {
-                        const item = round[itemIndex];
-                        if (item.type === 'bye') continue;
-                        if (item.winner === null) continue;
-                        const p1n = resolve(item.p1);
-                        const p2n = resolve(item.p2);
-                        if (p1n === null && !isTBD(item.p1) && p2n !== null && item.winner === p2n) {
-                            round.splice(itemIndex, 1);
-                            round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
-                            changed = true;
-                        } else if (p2n === null && !isTBD(item.p2) && p1n !== null && item.winner === p1n) {
-                            round.splice(itemIndex, 1);
-                            round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
-                            changed = true;
-                        } else if (p1n === null && p2n === null && !isTBD(item.p1) && !isTBD(item.p2)) {
-                            round.splice(itemIndex, 1);
-                            changed = true;
-                        }
-                    }
-                });
+                    });
+                }
                 toRemove.forEach(({round, item}) => {
                     const index = round.indexOf(item);
                     if (index > -1) {
@@ -602,7 +597,6 @@
                         changed = true;
                     }
                 });
-                // Filter freeAdvances to only include non-busy players (prevents duplicates from cross-round pulls)
                 const filteredFreeAdvances = freeAdvances.filter(fa => !busy.has(fa.player));
                 if (filteredFreeAdvances.length >= 2) {
                     let bestShuffle = null;
@@ -753,13 +747,13 @@
                         let pair = [n1, n2].sort().join('-');
                         if (pastMatches.has(pair)) rematches += 1;
                         const p1 = players.find(p => p.name === n1);
-                        if (p1 && p1.lastOpponent === n2) rematches += 2;
+                        if (p1 && p1.lastOpponent === n2) rematches += 2; // Strong penalty for consecutive rematch
                     } else if (s1.type !== 'player' && s2.type !== 'player') {
                         let key1 = getPendingKey(s1);
                         let key2 = getPendingKey(s2);
                         let pair = [key1, key2].sort().join('-');
-                        if (pastMatches.has(pair)) rematches += 10;
-                        if (s1.itemId === s2.itemId) rematches += 20;
+                        if (pastMatches.has(pair)) rematches += 10; // High penalty for repeating TBD pair
+                        if (s1.itemId === s2.itemId) rematches += 20; // Extra for winner/loser from same match
                     }
                 }
                 if (rematches < minRematches) {
