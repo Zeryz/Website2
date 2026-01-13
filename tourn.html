@@ -527,7 +527,8 @@
                 });
                 rounds.forEach((round, rIndex) => {
                     if (rIndex < rounds.length - 1) return; // Only process the latest round for consolidation
-                    round.forEach((item, itemIndex) => {
+                    for (let itemIndex = round.length - 1; itemIndex >= 0; itemIndex--) {
+                        const item = round[itemIndex];
                         if (item.type === 'bye') {
                             const sourceName = resolve(item.source);
                             const sourceNameIgnore = resolve(item.source, true);
@@ -538,7 +539,7 @@
                             }
                             return;
                         }
-                        if (item.winner !== null || item.ignoreAuto) return;
+                        if (item.winner !== null || item.ignoreAuto) continue;
                         const p1n = resolve(item.p1);
                         const p2n = resolve(item.p2);
                         const p1Disp = getDisplayName(item.p1);
@@ -557,7 +558,7 @@
                             round.splice(itemIndex, 1);
                             changed = true;
                         }
-                    });
+                    }
                 });
                 toRemove.forEach(({round, item}) => {
                     const index = round.indexOf(item);
