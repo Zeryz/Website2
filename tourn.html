@@ -525,6 +525,22 @@
                         }
                     });
                 });
+                // Compute busy set for filtering freeAdvances later
+                const undecided = [];
+                rounds.forEach(round => {
+                    round.forEach(item => {
+                        if (item.type !== 'bye' && item.winner === null) {
+                            undecided.push(item);
+                        }
+                    });
+                });
+                const busy = new Set();
+                undecided.forEach(m => {
+                    const p1 = resolve(m.p1);
+                    const p2 = resolve(m.p2);
+                    if (p1) busy.add(p1);
+                    if (p2) busy.add(p2);
+                });
                 rounds.forEach(round => {
                     for (let itemIndex = round.length - 1; itemIndex >= 0; itemIndex--) {
                         const item = round[itemIndex];
@@ -555,12 +571,12 @@
                         }
                     }
                 });
-                // New loop for completed matches conversion
+                // Additional loop for completed matches
                 rounds.forEach(round => {
                     for (let itemIndex = round.length - 1; itemIndex >= 0; itemIndex--) {
                         const item = round[itemIndex];
                         if (item.type === 'bye') continue;
-                        if (item.winner === null) continue; // Already handled in undecided loop
+                        if (item.winner === null) continue;
                         const p1n = resolve(item.p1);
                         const p2n = resolve(item.p2);
                         if (p1n === null && !isTBD(item.p1) && p2n !== null && item.winner === p2n) {
@@ -584,11 +600,13 @@
                         changed = true;
                     }
                 });
-                if (freeAdvances.length >= 2) {
+                // Filter freeAdvances to only include non-busy players (prevents duplicates from cross-round pulls)
+                const filteredFreeAdvances = freeAdvances.filter(fa => !busy.has(fa.player));
+                if (filteredFreeAdvances.length >= 2) {
                     let bestShuffle = null;
                     let minRematches = Infinity;
                     for (let attempt = 0; attempt < 200; attempt++) {
-                        const shuffled = shuffle([...freeAdvances]);
+                        const shuffled = shuffle([...filteredFreeAdvances]);
                         let rematches = 0;
                         for (let i = 0; i < shuffled.length - (shuffled.length % 2); i += 2) {
                             const n1 = shuffled[i].player;
