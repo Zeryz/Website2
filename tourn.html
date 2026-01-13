@@ -725,16 +725,15 @@
                         const p2n = resolve(item.p2, true);
                         const loserName = item.winner === p1n ? p2n : p1n;
                         const loser = players.find(p => p.name === loserName);
-                        if (loser) {
+                        const wasActive = loser && loser.losses < maxLosses;
+                        if (loser && wasActive) {
                             loser.losses += 1;
-                            if (winnerP) {
-                                winnerP.lastOpponent = loserName;
-                                loser.lastOpponent = item.winner;
-                            }
                         }
                         if (winnerP) {
-                            if (loser) {
+                            if (loser && wasActive) {
                                 winnerP.wins += 1;
+                                winnerP.lastOpponent = loserName;
+                                loser.lastOpponent = item.winner;
                             } else {
                                 winnerP.byes += 1;
                             }
