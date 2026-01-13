@@ -334,7 +334,7 @@
     </div>
     <script>
         let playerNames = [];
-        let players = []; // {name, losses: 0, byes: 0, wins: 0, lastOpponent: null}
+        let players = []; // {name, losses: 0, byes: 0, wins: 0, lastOpponent: null, eliminated: false}
         let format = 'double';
         let maxLosses = 2;
         let rounds = [];
@@ -368,7 +368,7 @@
             if (!name || !name.trim()) return;
             name = name.trim();
             if (players.find(p => p.name === name)) return alert('Player already added!');
-            const newPlayer = { name, losses: 0, byes: 0, wins: 0, lastOpponent: null };
+            const newPlayer = { name, losses: 0, byes: 0, wins: 0, lastOpponent: null, eliminated: false };
             players.push(newPlayer);
             if (currentRoundIndex >= 0) {
                 let round = rounds[currentRoundIndex];
@@ -431,7 +431,7 @@
             if (playerNames.length < 2) return alert('Add at least 2 players!');
             format = document.getElementById('format').value;
             maxLosses = format === 'single' ? 1 : 2;
-            players = playerNames.map(name => ({ name, losses: 0, byes: 0, wins: 0, lastOpponent: null }));
+            players = playerNames.map(name => ({ name, losses: 0, byes: 0, wins: 0, lastOpponent: null, eliminated: false }));
             playerNames = [];
             rounds = [];
             currentRoundIndex = -1;
@@ -445,7 +445,7 @@
             generateNextRound();
         }
         function getActivePlayers() {
-            return players.filter(p => p.losses < maxLosses);
+            return players.filter(p => !p.eliminated && p.losses < maxLosses);
         }
         function getReadyPlayers() {
             const active = getActivePlayers();
@@ -478,7 +478,7 @@
                 const p1 = players.find(p => p.name === match.p1);
                 const p2 = players.find(p => p.name === match.p2);
                 entities.push({ type: 'winner_of', matchId: match.id });
-                if (p1.losses < maxLosses - 1 && p2.losses < maxLosses - 1) {
+                if (!p1.eliminated && !p2.eliminated && p1.losses < maxLosses - 1 && p2.losses < maxLosses - 1) {
                     entities.push({ type: 'loser_of', matchId: match.id });
                 }
             });
@@ -615,7 +615,7 @@
                         const item = round[i];
                         if (item.type === 'bye') {
                             const p = getPlayer(item.player);
-                            if (!p || p.losses >= maxLosses) {
+                            if (!p || p.eliminated || p.losses >= maxLosses) {
                                 round.splice(i, 1);
                                 changed = true;
                                 continue;
@@ -623,8 +623,8 @@
                         } else {
                             const p1 = getPlayer(item.p1);
                             const p2 = getPlayer(item.p2);
-                            const e1 = typeof item.p1 !== 'object' && (!p1 || p1.losses >= maxLosses);
-                            const e2 = typeof item.p2 !== 'object' && (!p2 || p2.losses >= maxLosses);
+                            const e1 = typeof item.p1 !== 'object' && (!p1 || p1.eliminated || p1.losses >= maxLosses);
+                            const e2 = typeof item.p2 !== 'object' && (!p2 || p2.eliminated || p2.losses >= maxLosses);
                             if (e1 && e2) {
                                 round.splice(i, 1);
                                 changed = true;
@@ -649,7 +649,7 @@
                     if (round[j].type === 'bye') {
                         const player = round[j].player;
                         const p = getPlayer(player);
-                        if (p && p.losses < maxLosses) {
+                        if (p && !p.eliminated && p.losses < maxLosses) {
                             byePlayers.push(player);
                         }
                         round.splice(j, 1);
@@ -718,7 +718,7 @@
             let standingsPlayers = [...players].sort((a, b) => a.losses - b.losses || b.wins - a.wins || Math.random() - 0.5);
             standingsPlayers.forEach(p => {
                 const row = document.createElement('tr');
-                const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
+                const statusClass = p.eliminated || p.losses >= maxLosses ? 'eliminated' : '';
                 row.innerHTML = `
                     <td class="${statusClass}">${p.name}</td>
                     <td>${p.losses}</td>
@@ -732,12 +732,12 @@
         function removeTournamentPlayer(name) {
             const player = players.find(p => p.name === name);
             if (!player) return;
-            let message = `Remove ${name}? This will eliminate them from the tournament but preserve past scores.`;
-            if (player.losses < maxLosses) {
-                message = `You're about to remove an active player ${name}. This will eliminate them but preserve past scores. Continue?`;
+            let message = `Eliminate ${name}? This will label them as eliminated and preserve past scores.`;
+            if (!player.eliminated && player.losses < maxLosses) {
+                message = `You're about to eliminate an active player ${name}. This will label them as eliminated but preserve past scores. Continue?`;
             }
             if (!confirm(message)) return;
-            player.losses = maxLosses;
+            player.eliminated = true;
             propagateUpdates();
             renderAll();
             saveState();
@@ -844,7 +844,10 @@
                 prevRound.forEach(item => {
                     if (item.type !== 'bye' && item.winner && typeof item.p1 === 'string' && typeof item.p2 === 'string') {
                         const loserName = item.winner === item.p1 ? item.p2 : item.p1;
-                        losers.push(loserName);
+                        const loserP = players.find(p => p.name === loserName);
+                        if (loserP && !loserP.eliminated) {
+                            losers.push(loserName);
+                        }
                     }
                 });
                 if (losers.length === 2) {
@@ -900,7 +903,7 @@
             const data = JSON.parse(saved);
             playerNames = data.playerNames || [];
             format = data.format || 'double';
-            players = data.players.map(p => ({ ...p, lastOpponent: p.lastOpponent || null })) || [];
+            players = data.players.map(p => ({ ...p, lastOpponent: p.lastOpponent || null, eliminated: p.eliminated || false })) || [];
             rounds = data.rounds || [];
             tiebreakerActive = data.tiebreakerActive || false;
             tournamentStarted = data.tournamentStarted || false;
