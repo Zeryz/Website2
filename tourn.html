@@ -527,11 +527,11 @@
                 });
                 rounds.forEach((round, rIndex) => {
                     if (rIndex < rounds.length - 1) return; // Only process the latest round for consolidation
-                    round.forEach(item => {
+                    round.forEach((item, itemIndex) => {
                         if (item.type === 'bye') {
                             const sourceName = resolve(item.source);
-                            const sourceDisp = getDisplayName(item.source);
-                            if (sourceDisp === 'Eliminated') {
+                            const sourceNameIgnore = resolve(item.source, true);
+                            if (sourceName === null && sourceNameIgnore !== null) {
                                 toRemove.push({round, item});
                             } else if (sourceName) {
                                 freeAdvances.push({type: 'bye', player: sourceName, item});
@@ -543,20 +543,19 @@
                         const p2n = resolve(item.p2);
                         const p1Disp = getDisplayName(item.p1);
                         const p2Disp = getDisplayName(item.p2);
-                        if (p1n === null && p2n !== null && p1Disp === 'Eliminated') {
-                            const index = round.indexOf(item);
-                            if (index !== -1) {
-                                round.splice(index, 1);
-                                round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
-                                changed = true;
-                            }
-                        } else if (p2n === null && p1n !== null && p2Disp === 'Eliminated') {
-                            const index = round.indexOf(item);
-                            if (index !== -1) {
-                                round.splice(index, 1);
-                                round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
-                                changed = true;
-                            }
+                        const p1NameIgnore = resolve(item.p1, true);
+                        const p2NameIgnore = resolve(item.p2, true);
+                        if (p1n === null && p2n !== null && p1Disp !== 'TBD') {
+                            round.splice(itemIndex, 1);
+                            round.push({type: 'bye', source: {type: 'player', name: p2n}, id: matchIdCounter++});
+                            changed = true;
+                        } else if (p2n === null && p1n !== null && p2Disp !== 'TBD') {
+                            round.splice(itemIndex, 1);
+                            round.push({type: 'bye', source: {type: 'player', name: p1n}, id: matchIdCounter++});
+                            changed = true;
+                        } else if (p1n === null && p2n === null && p1Disp !== 'TBD' && p2Disp !== 'TBD') {
+                            round.splice(itemIndex, 1);
+                            changed = true;
                         }
                     });
                 });
