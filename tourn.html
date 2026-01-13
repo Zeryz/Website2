@@ -283,14 +283,6 @@
             font-style: italic;
             font-size: 13px;
         }
-        .podium {
-            text-align: center;
-            margin: 50px 0;
-            font-size: 24px;
-        }
-        .podium div {
-            margin: 10px 0;
-        }
         #nextRoundBtn {
             text-align: center;
             margin: 30px 0;
@@ -328,7 +320,6 @@
                 <div id="nextRoundBtn">
                     <button onclick="generateNextRound()">Generate Next Round</button>
                 </div>
-                <div id="podium" class="podium" style="display: none;"></div>
             </div>
         </div>
     </div>
@@ -339,7 +330,6 @@
         let maxLosses = 2;
         let rounds = [];
         let currentRoundIndex = -1;
-        let tiebreakerActive = false;
         let tournamentStarted = false;
         let matchIdCounter = 0;
         document.getElementById('nameInput').addEventListener('keydown', e => {
@@ -428,7 +418,6 @@
             playerNames = [];
             rounds = [];
             currentRoundIndex = -1;
-            tiebreakerActive = false;
             tournamentStarted = true;
             matchIdCounter = 0;
             document.getElementById('preStartInput').style.display = 'none';
@@ -583,13 +572,12 @@
             }
             let active = getActivePlayers();
             if (active.length <= 1) {
-                checkForPodium();
+                document.getElementById('nextRoundBtn').style.display = 'none';
                 return;
             }
-            let ready = getReadyPlayers();
-            let pendingSources = [];
+            let ready = getActivePlayers();
             let readySources = ready.map(p => ({type: 'player', name: p.name, losses: p.losses}));
-            let pairingActive = readySources.concat(pendingSources);
+            let pairingActive = readySources;
             let pastMatches = new Set();
             rounds.forEach(round => {
                 round.forEach(item => {
@@ -603,38 +591,30 @@
                     }
                 });
             });
-            pairingActive.sort((a, b) => a.losses - b.losses);
+            pairingActive.sort((a, b) => a.losses - b.losses || b.wins - a.wins);
             const newRound = [];
             let byeSource = null;
             if (pairingActive.length % 2 === 1) {
-                const minByes = Math.min(...active.map(p => p.byes));
-                const candidates = ready.filter(p => p.byes === minByes);
-                if (candidates.length > 0) {
-                    const byeP = candidates[Math.floor(Math.random() * candidates.length)];
-                    byeP.byes += 1;
-                    byeSource = readySources.find(s => s.name === byeP.name);
-                } else if (pendingSources.length > 0) {
-                    byeSource = pendingSources[Math.floor(Math.random() * pendingSources.length)];
-                }
-                if (byeSource) {
-                    pairingActive = pairingActive.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
-                    newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
-                }
+                const minByes = Math.min(...ready.map(p => p.byes));
+                const candidates = ready.filter(p => p.byes === minByes).sort((a, b) => a.losses - b.losses || b.wins - a.wins);
+                const byeP = candidates[0]; // Prefer lowest losses, highest wins for bye
+                byeP.byes += 1;
+                byeSource = {type: 'player', name: byeP.name};
+                pairingActive = pairingActive.filter(s => s.name !== byeP.name);
+                newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
             }
             let bestShuffle = null;
             let minRematches = Infinity;
-            for (let attempt = 0; attempt < 1000; attempt++) { // Increased attempts for better chance at zero rematches
+            for (let attempt = 0; attempt < 1000; attempt++) {
                 const shuffled = [...pairingActive].sort(() => Math.random() - 0.5);
                 let rematches = 0;
                 for (let i = 0; i < shuffled.length; i += 2) {
                     const s1 = shuffled[i];
-                    const n1 = resolve(s1);
+                    const n1 = s1.name;
                     const s2 = shuffled[i + 1];
-                    const n2 = resolve(s2);
-                    if (n1 && n2) {
-                        let pair = [n1, n2].sort().join('-');
-                        if (pastMatches.has(pair)) rematches++;
-                    }
+                    const n2 = s2.name;
+                    let pair = [n1, n2].sort().join('-');
+                    if (pastMatches.has(pair)) rematches++;
                 }
                 if (rematches < minRematches) {
                     minRematches = rematches;
@@ -662,8 +642,7 @@
                 p.wins = 0;
                 p.byes = 0;
             });
-            rounds.forEach((round, roundIdx) => {
-                if (tiebreakerActive && roundIdx === rounds.length - 1) return;
+            rounds.forEach(round => {
                 round.forEach(item => {
                     if (item.type === 'bye') {
                         const name = resolve(item.source);
@@ -696,9 +675,7 @@
             div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th><th>Wins</th><th>Byes</th><th></th></tr></table>';
             const table = div.querySelector('table');
             let standingsPlayers = [...players].sort((a, b) => a.losses - b.losses || b.wins - a.wins || Math.random() - 0.5);
-            if (!tiebreakerActive) {
-                standingsPlayers = standingsPlayers.filter(p => p.losses < maxLosses);
-            }
+            standingsPlayers = standingsPlayers.filter(p => p.losses < maxLosses);
             standingsPlayers.forEach(p => {
                 const row = document.createElement('tr');
                 const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
@@ -785,9 +762,6 @@
             container.innerHTML = '';
             rounds.forEach((round, rIdx) => {
                 let roundTitle = `Round ${rIdx + 1}`;
-                if (tiebreakerActive && rIdx === rounds.length - 1) {
-                    roundTitle = '3rd Place Match';
-                }
                 const roundDiv = document.createElement('div');
                 roundDiv.className = 'round';
                 roundDiv.innerHTML = `<h2>${roundTitle}</h2>`;
@@ -866,67 +840,8 @@
             propagateAutoAdvances();
             renderStandings();
             renderRounds();
-            checkForPodium();
             const ready = getReadyPlayers();
             document.getElementById('nextRoundBtn').style.display = ready.length >= 2 ? 'block' : 'none';
-        }
-        function checkForPodium() {
-            const active = getActivePlayers();
-            if (active.length > 1) return;
-            const podiumDiv = document.getElementById('podium');
-            podiumDiv.innerHTML = '';
-            podiumDiv.style.display = 'none';
-            if (!tiebreakerActive && rounds.length >= 2) {
-                const prevRound = rounds[rounds.length - 2];
-                const losers = [];
-                prevRound.forEach(item => {
-                    if (item.type !== 'bye' && item.winner) {
-                        const p1 = resolve(item.p1, true);
-                        const p2 = resolve(item.p2, true);
-                        const loserName = item.winner === p1 ? p2 : p1;
-                        if (loserName) losers.push(loserName);
-                    }
-                });
-                if (losers.length === 2) {
-                    tiebreakerActive = true;
-                    const tieRound = [{
-                        p1: {type: 'player', name: losers[0]},
-                        p2: {type: 'player', name: losers[1]},
-                        winner: null,
-                        id: matchIdCounter++,
-                        ignoreAuto: false
-                    }];
-                    rounds.push(tieRound);
-                    currentRoundIndex = rounds.length - 1;
-                    renderAll();
-                    saveState();
-                    return;
-                }
-            }
-            const finalRound = tiebreakerActive ? rounds[rounds.length - 2] : rounds[rounds.length - 1];
-            const finalMatch = finalRound.find(item => item.type !== 'bye');
-            if (finalMatch && finalMatch.winner) {
-                const first = finalMatch.winner;
-                const p1 = resolve(finalMatch.p1, true);
-                const p2 = resolve(finalMatch.p2, true);
-                const second = finalMatch.winner === p1 ? p2 : p1;
-                podiumDiv.innerHTML += `<div>1st Place: ${first}</div>`;
-                if (second) podiumDiv.innerHTML += `<div>2nd Place: ${second}</div>`;
-            }
-            if (tiebreakerActive) {
-                const tieRound = rounds[rounds.length - 1];
-                const tieMatch = tieRound.find(item => item.type !== 'bye');
-                if (tieMatch && tieMatch.winner) {
-                    const third = tieMatch.winner;
-                    const p1 = resolve(tieMatch.p1, true);
-                    const p2 = resolve(tieMatch.p2, true);
-                    const fourth = tieMatch.winner === p1 ? p2 : p1;
-                    podiumDiv.innerHTML += `<div>3rd Place: ${third}</div>`;
-                    if (fourth) podiumDiv.innerHTML += `<div>4th Place: ${fourth}</div>`;
-                }
-            }
-            podiumDiv.style.display = 'block';
-            document.getElementById('nextRoundBtn').style.display = 'none';
         }
         function saveState() {
             localStorage.setItem('poolTournament', JSON.stringify({
@@ -934,7 +849,6 @@
                 format,
                 players,
                 rounds,
-                tiebreakerActive,
                 tournamentStarted,
                 matchIdCounter
             }));
@@ -947,7 +861,6 @@
             format = data.format || 'double';
             players = data.players || [];
             rounds = data.rounds || [];
-            tiebreakerActive = data.tiebreakerActive || false;
             tournamentStarted = data.tournamentStarted || false;
             matchIdCounter = data.matchIdCounter || 0;
             maxLosses = format === 'single' ? 1 : 2;
