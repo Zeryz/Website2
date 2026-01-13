@@ -539,7 +539,7 @@
                         if (advancers.length % 2 === 1) {
                             const minByes = Math.min(...advancers.map(t => players.find(p => p.name === t.liveName).byes));
                             const candidates = advancers.filter(t => players.find(p => p.name === t.liveName).byes === minByes);
-                            const byeT = candidates[Math.floor(Math.random() * candidates.length)];
+                            const byeT = candidates[candidates.length - 1]; // Prefer last for stability
                             byeSource = byeT.liveSource;
                             liveSources = liveSources.filter(s => JSON.stringify(s) !== JSON.stringify(byeSource));
                             newRound.push({type: 'bye', source: byeSource, id: matchIdCounter++});
