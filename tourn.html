@@ -332,7 +332,6 @@
         let currentRoundIndex = -1;
         let tournamentStarted = false;
         let matchIdCounter = 0;
-        let tournamentEnded = false;
         document.getElementById('nameInput').addEventListener('keydown', e => {
             if (e.key === 'Enter' && e.target.value.trim()) {
                 addPlayer(e.target.value.trim());
@@ -562,9 +561,7 @@
         function generateNextRound() {
             let active = getActivePlayers();
             if (active.length <= 1) {
-                tournamentEnded = true;
                 document.getElementById('nextRoundBtn').style.display = 'none';
-                renderAll();
                 return;
             }
             let ready = getReadyPlayers();
@@ -693,11 +690,7 @@
             div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th><th>Wins</th><th>Byes</th><th></th></tr></table>';
             const table = div.querySelector('table');
             let standingsPlayers = [...players].sort((a, b) => a.losses - b.losses || b.wins - a.wins || Math.random() - 0.5);
-            if (tournamentEnded) {
-                // Show all players at end
-            } else {
-                standingsPlayers = standingsPlayers.filter(p => p.losses < maxLosses);
-            }
+            standingsPlayers = standingsPlayers.filter(p => p.losses < maxLosses);
             standingsPlayers.forEach(p => {
                 const row = document.createElement('tr');
                 const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
@@ -907,11 +900,10 @@
                 generateNextRound();
                 return; // Exit to avoid double render
             }
-            tournamentEnded = getActivePlayers().length <= 1;
             renderStandings();
             renderRounds();
             const ready = getReadyPlayers();
-            document.getElementById('nextRoundBtn').style.display = tournamentEnded ? 'none' : (ready.length >= 2 ? 'block' : 'none');
+            document.getElementById('nextRoundBtn').style.display = ready.length >= 2 ? 'block' : 'none';
         }
         function saveState() {
             localStorage.setItem('poolTournament', JSON.stringify({
