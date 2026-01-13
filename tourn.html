@@ -716,7 +716,6 @@
             div.innerHTML = '<h2>Standings</h2><table><tr><th>Player</th><th>Losses</th><th>Wins</th><th>Byes</th><th></th></tr></table>';
             const table = div.querySelector('table');
             let standingsPlayers = [...players].sort((a, b) => a.losses - b.losses || b.wins - a.wins || Math.random() - 0.5);
-            standingsPlayers = standingsPlayers.filter(p => p.losses < maxLosses);
             standingsPlayers.forEach(p => {
                 const row = document.createElement('tr');
                 const statusClass = p.losses >= maxLosses ? 'eliminated' : '';
@@ -733,12 +732,12 @@
         function removeTournamentPlayer(name) {
             const player = players.find(p => p.name === name);
             if (!player) return;
-            let message = `Remove ${name}?`;
+            let message = `Remove ${name}? This will eliminate them from the tournament but preserve past scores.`;
             if (player.losses < maxLosses) {
-                message = `You're about to remove an active player ${name}. This action cannot be undone. Continue?`;
+                message = `You're about to remove an active player ${name}. This will eliminate them but preserve past scores. Continue?`;
             }
             if (!confirm(message)) return;
-            players = players.filter(p => p.name !== name);
+            player.losses = maxLosses;
             propagateUpdates();
             renderAll();
             saveState();
